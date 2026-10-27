@@ -4,11 +4,10 @@
 
 > 畫面中的單位、個案、人名與數字皆為**合成資料**，僅供示範。
 
-**線上 Demo：** https://easonhu0620.github.io/Social-Worker-Case-Management-System/ （啟用 GitHub Pages 後生效，見下方「部署」）
+**線上 Demo：** https://easonhu0620.github.io/Social-Worker-Case-Management-System/
 
 ## 目錄
 
-- [部署](#部署)
 - [使用說明](#使用說明)
   - [一、認識系統](#一認識系統)
   - [二、開始使用](#二開始使用)
@@ -23,32 +22,6 @@
   - [十一、練習任務與常見問題](#十一練習任務與常見問題)
 - [設計原則](#設計原則)
 - [技術](#技術)
-
----
-
-## 部署
-
-整個 Demo 是單一檔案 `index.html`，沒有建置步驟，任何能放靜態網頁的地方都能用。
-
-**方式一：GitHub Pages（建議）**
-
-本 repo 已附 `.github/workflows/pages.yml`，推送到 `main` 就會自動部署。第一次需要啟用一次：
-
-1. 到 repo 的 **Settings → Pages**。
-2. **Build and deployment → Source** 選 **GitHub Actions**。
-3. 到 **Actions** 分頁確認「Deploy to GitHub Pages」執行成功，網址會顯示在執行結果中。
-
-之後每次推送到 `main` 都會自動更新網站。
-
-> 也可以不用 Actions：Source 選 **Deploy from a branch**，分支選 `main`、資料夾選 `/ (root)`。
-
-**方式二：本機開啟**
-
-下載 `index.html`，直接用瀏覽器開啟即可。
-
-**方式三：其他靜態主機**
-
-把 `index.html` 上傳到 Netlify、Vercel、Cloudflare Pages 或任何網頁伺服器的根目錄。
 
 ---
 
