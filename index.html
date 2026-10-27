@@ -1,0 +1,1746 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>一談多用 Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+</head>
+<body>
+<style>
+/* Layout: 社工工作台——左側流程導覽，右側單一工作區；狀態用藍（AI）／金（人工）／綠（自動）三色標記 */
+:root{
+  --bg:#F3F4F2; --panel:#FFFFFF; --panel-2:#F7F8F6; --line:#DCE0DA; --line-2:#E8EBE6;
+  --fg:#18222F; --fg-2:#4A5563; --fg-3:#6B7480;
+  --nav:#1E3F6E; --nav-fg:#FFFFFF;
+  --ai:#2A5CA8; --ai-bg:#E6EEF9; --human:#A8770F; --human-bg:#FBF1D6; --auto:#2D7A4E; --auto-bg:#E2F2E8;
+  --hi:#2D7A4E; --hi-bg:#E2F2E8; --mid:#9A6E0C; --mid-bg:#FBF1D6; --low:#B5481F; --low-bg:#FBE6DC;
+  --warn-bg:#FFF5E8; --warn-line:#F0C98A; --mark:#FFF3B8; --shadow:0 1px 2px rgba(24,34,47,.06);
+  --font:'Noto Sans TC','Noto Sans CJK TC','PingFang TC','Microsoft JhengHei',sans-serif;
+  --mono:'IBM Plex Mono','Noto Sans Mono CJK TC',ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121821; --panel:#1A2230; --panel-2:#1F2938; --line:#2E3A4C; --line-2:#263142;
+  --fg:#E8ECF2; --fg-2:#B7C0CD; --fg-3:#8E99A8; --nav:#22477C; --nav-fg:#FFFFFF;
+  --ai:#8DB4F0; --ai-bg:#1E3352; --human:#E7C066; --human-bg:#3A3018; --auto:#7FCB9C; --auto-bg:#1B3628;
+  --hi:#7FCB9C; --hi-bg:#1B3628; --mid:#E7C066; --mid-bg:#3A3018; --low:#F09A78; --low-bg:#43261C;
+  --warn-bg:#33291A; --warn-line:#6E5525; --mark:#4A4320; --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121821; --panel:#1A2230; --panel-2:#1F2938; --line:#2E3A4C; --line-2:#263142;
+  --fg:#E8ECF2; --fg-2:#B7C0CD; --fg-3:#8E99A8; --nav:#22477C; --nav-fg:#FFFFFF;
+  --ai:#8DB4F0; --ai-bg:#1E3352; --human:#E7C066; --human-bg:#3A3018; --auto:#7FCB9C; --auto-bg:#1B3628;
+  --hi:#7FCB9C; --hi-bg:#1B3628; --mid:#E7C066; --mid-bg:#3A3018; --low:#F09A78; --low-bg:#43261C;
+  --warn-bg:#33291A; --warn-line:#6E5525; --mark:#4A4320; --shadow:none; color-scheme:dark}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.55}
+*{box-sizing:border-box}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ai);outline-offset:2px}
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);height:100%}
+/* sidebar */
+.side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;padding-left:env(safe-area-inset-left,0px)}
+.brand{display:flex;gap:10px;align-items:center;padding:18px 18px 14px}
+.logo{width:34px;height:34px;border-radius:8px;background:var(--nav);color:var(--nav-fg);display:grid;place-items:center;font-weight:700;font-size:15px;flex:none}
+.brand b{display:block;font-size:16px;line-height:1.2}
+.brand small{color:var(--fg-3);font-size:12px}
+.nav{display:flex;flex-direction:column;gap:2px;padding:6px 10px;overflow:auto;flex:1}
+.nav .grp{font-size:12px;color:var(--fg-3);padding:6px 10px 2px;letter-spacing:.06em}
+.nav a{display:flex;align-items:center;gap:10px;padding:5px 12px;border-radius:8px;color:var(--fg);text-decoration:none;font-size:15px}
+.nav a .n{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--fg-2);flex:none}
+.nav a:hover{background:var(--panel-2)}
+.nav a.on{background:var(--nav);color:var(--nav-fg)}
+.nav a.on .n{border-color:rgba(255,255,255,.6);color:var(--nav-fg)}
+.nav a .ok{margin-left:auto;color:var(--auto);font-size:13px}
+.nav a.on .ok{color:var(--nav-fg)}
+.tally{border-top:1px solid var(--line);padding:14px 18px 18px;font-size:13px;color:var(--fg-2)}
+.tally .bar{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:8px 0 10px;background:var(--line-2)}
+.tally .bar i{display:block}
+.tally .row{display:flex;justify-content:space-between;padding:2px 0}
+.tally .row b{font-family:var(--mono);font-weight:500;color:var(--fg)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle}
+/* main */
+.main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.top{display:flex;align-items:center;gap:14px;padding:12px max(16px,env(safe-area-inset-right,0px)) 12px 24px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+.crumb{color:var(--fg-2);font-size:14px;flex:1;min-width:0}
+.crumb b{color:var(--fg);font-weight:500}
+.pill-fake{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--low-bg);color:var(--low);white-space:nowrap}
+.who{display:flex;align-items:center;gap:8px;font-size:14px;white-space:nowrap}
+.who i{width:28px;height:28px;border-radius:50%;background:var(--ai-bg);color:var(--ai);display:grid;place-items:center;font-style:normal;font-weight:700}
+.view{flex:1;overflow:auto;padding:22px max(16px,env(safe-area-inset-right,0px)) 28px 24px;min-height:0}
+.head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px}
+.head h1{font-size:24px;line-height:1.3;margin:0 0 4px;text-wrap:balance}
+.head p{margin:0;color:var(--fg-2);max-width:78ch}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);min-width:0}
+.card>h2{font-size:16px;margin:0;padding:14px 18px;border-bottom:1px solid var(--line-2);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.card>h2 small{font-weight:400;color:var(--fg-3);font-size:13px}
+.card .bd{padding:14px 18px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
+.g3{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,.8fr)}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;white-space:nowrap;font-weight:500;line-height:1.7}
+.t-ai{background:var(--ai-bg);color:var(--ai)} .t-hu{background:var(--human-bg);color:var(--human)} .t-au{background:var(--auto-bg);color:var(--auto)}
+.t-hi{background:var(--hi-bg);color:var(--hi)} .t-mid{background:var(--mid-bg);color:var(--mid)} .t-low{background:var(--low-bg);color:var(--low)}
+.t-off{background:var(--line-2);color:var(--fg-3);text-decoration:line-through}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 14px;font-size:14px}
+.btn:hover{background:var(--panel-2)}
+.btn.pri{background:var(--nav);border-color:var(--nav);color:var(--nav-fg)}
+.btn.pri:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:3px 10px;font-size:13px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:transparent;padding:6px 14px;font-size:14px;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--nav);color:var(--nav-fg)}
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t th{text-align:left;font-weight:500;color:var(--fg-3);font-size:13px;padding:8px 10px;border-bottom:1px solid var(--line)}
+table.t td{padding:9px 10px;border-bottom:1px solid var(--line-2);vertical-align:top}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--fg-3)}
+.alert{display:flex;gap:12px;align-items:flex-start;background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:10px;padding:12px 14px;font-size:14px}
+.alert b{display:block}
+.stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.scroll-x{overflow-x:auto}
+/* intake */
+.drop{border:1.5px dashed var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.file{display:flex;gap:10px;align-items:center;font-size:14px;padding:8px 10px;background:var(--panel-2);border-radius:8px}
+.file .ic{width:34px;height:40px;border-radius:4px;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;flex:none}
+.file .st{margin-left:auto;font-size:13px}
+.prog{height:4px;border-radius:2px;background:var(--line-2);overflow:hidden;margin-top:4px}
+.prog i{display:block;height:100%;background:var(--ai);width:100%;transition:width .5s}
+/* visit */
+.player{display:flex;gap:14px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line-2);flex-wrap:wrap}
+.play{width:38px;height:38px;border-radius:50%;border:0;background:var(--nav);color:var(--nav-fg);font-size:14px;flex:none}
+.wave{flex:1;min-width:160px;height:34px;display:flex;align-items:center;gap:2px;cursor:pointer}
+.wave i{flex:1;background:var(--line);border-radius:2px}
+.wave i.p{background:var(--ai)}
+.tr{display:flex;flex-direction:column;gap:2px;max-height:none}
+.ln{display:grid;grid-template-columns:62px 52px minmax(0,1fr);gap:8px;padding:7px 10px;border-radius:8px;font-size:14.5px;cursor:pointer}
+.ln:hover{background:var(--panel-2)}
+.ln.cur{background:var(--ai-bg)}
+.ln.flash{background:var(--mark)}
+.ln .tc{font-family:var(--mono);font-size:12.5px;color:var(--fg-3);padding-top:2px}
+.ln .sp{font-size:13px;color:var(--fg-3)}
+.ln .sp.c{color:var(--ai);font-weight:500}
+.mask{background:var(--line-2);border-radius:4px;padding:0 4px;font-size:13px;color:var(--fg-2)}
+.ex{display:flex;flex-direction:column;gap:8px}
+.exi{border:1px solid var(--line);border-left-width:4px;border-radius:8px;padding:9px 12px;cursor:pointer;background:var(--panel)}
+.exi:hover{background:var(--panel-2)}
+.exi .r1{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.exi p{margin:2px 0 0;font-size:14.5px}
+.exi .meta{font-size:12.5px;color:var(--fg-3);margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.exi.hi{border-left-color:var(--hi)} .exi.mid{border-left-color:var(--mid)} .exi.low{border-left-color:var(--low)}
+/* status review */
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 12px;font-size:13px}
+.chip.on{background:var(--fg);color:var(--panel);border-color:var(--fg)}
+.sec h3{font-size:13px;color:var(--fg-3);margin:14px 0 6px;font-weight:500;letter-spacing:.06em}
+.it{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:12px;align-items:start;padding:11px 12px;border:1px solid var(--line-2);border-radius:10px;margin-bottom:8px;background:var(--panel)}
+.it.done{background:var(--panel-2)}
+.it .txt{font-size:15px}
+.it .txt textarea{width:100%;min-height:58px;border:1px solid var(--ai);border-radius:6px;padding:6px 8px;background:var(--panel);resize:vertical}
+.it .why{font-size:12.5px;color:var(--fg-3);margin-top:3px}
+.it .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.it .stt{font-size:13px;white-space:nowrap}
+.src{font-family:var(--mono);font-size:12px;color:var(--ai);background:none;border:0;padding:0;text-decoration:underline;text-underline-offset:2px}
+.manual{display:grid;gap:12px}
+.manual label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--fg-2)}
+.manual select,.manual textarea{border:1px solid var(--warn-line);background:var(--panel);border-radius:8px;padding:7px 10px;font-size:14px}
+.manual textarea{min-height:76px;resize:vertical}
+.meter{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--line-2)}
+.meter i{display:block;transition:width .3s}
+.big{font-size:30px;font-weight:700;font-family:var(--mono);line-height:1.1}
+.diff{font-family:var(--mono);font-size:12.5px;background:var(--panel-2);border-radius:8px;padding:10px 12px;max-height:180px;overflow:auto;white-space:pre-wrap}
+/* geno */
+.geno svg{width:100%;height:auto;display:block}
+.geno .node{cursor:pointer}
+.geno .node:hover .shape,.geno .node.sel .shape{stroke:var(--ai);stroke-width:4}
+.gtext{font-family:var(--font);fill:var(--fg)}
+.gsub{font-family:var(--font);fill:var(--fg-3)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--fg-2)}
+pre.json{font-family:var(--mono);font-size:12.5px;background:var(--panel-2);border-radius:8px;padding:10px 12px;overflow:auto;max-height:230px;margin:0}
+/* referral */
+.consent label{display:flex;gap:8px;align-items:center;padding:5px 0;font-size:14px}
+.fld{display:grid;grid-template-columns:150px minmax(0,1fr) auto;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line-2);border-left:4px solid transparent}
+.fld.ai{border-left-color:var(--ai)} .fld.hu{border-left-color:var(--human)} .fld.au{border-left-color:var(--auto)} .fld.off{border-left-color:var(--line);color:var(--fg-3)}
+.fld .k{font-size:14px} .fld .k small{display:block;color:var(--fg-3);font-size:12px}
+.fld .v{font-size:14.5px} .fld .v small{display:block;color:var(--fg-3);font-size:12px;margin-top:2px}
+.fld.off .v{text-decoration:line-through}
+.fld .v textarea{width:100%;min-height:52px;resize:vertical;border:1px solid var(--warn-line);border-radius:6px;padding:5px 8px;background:var(--panel)}
+.check{display:flex;flex-direction:column;gap:6px;font-size:14px}
+.check div{display:flex;gap:8px}
+.ok{color:var(--auto)} .ng{color:var(--low)}
+.tl{display:flex;flex-direction:column;gap:0;margin-top:6px}
+.tl div{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:center;font-size:14px;padding:6px 0}
+.tl i{width:12px;height:12px;border-radius:50%;background:var(--auto);display:block;margin-left:3px}
+.tl i.w{background:var(--line)}
+.link{font-family:var(--mono);font-size:13px;background:var(--panel-2);padding:8px 10px;border-radius:8px;word-break:break-all}
+/* export */
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 12px;font-size:14px;text-align:left}
+.tabs button small{display:block;color:var(--fg-3);font-size:12px}
+.tabs button.on{border-color:var(--nav);box-shadow:inset 0 0 0 1px var(--nav)}
+.map{display:grid;grid-template-columns:minmax(0,1fr) 24px minmax(0,1fr) auto;gap:6px 8px;font-size:14px;align-items:center}
+.map .arrow{color:var(--fg-3);text-align:center}
+/* dashboard */
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.kpi{padding:14px 16px}
+.kpi small{color:var(--fg-2);font-size:13px;display:block}
+.kpi .big{margin-top:4px}
+.kpi .d{font-size:12.5px;color:var(--fg-3);margin-top:2px}
+.pipe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0}
+.pipe>div{padding:10px 12px;border-right:1px solid var(--line-2)}
+.pipe>div:last-child{border-right:0}
+.pipe b{display:block;font-family:var(--mono);font-size:20px}
+.pipe .barh{height:6px;background:var(--ai);border-radius:3px;margin-top:6px;opacity:.85}
+.chart svg{width:100%;height:auto;display:block}
+.al{display:flex;flex-direction:column;gap:8px}
+.al div{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;font-size:14px;padding:8px 10px;border-radius:8px;background:var(--panel-2)}
+.sev{width:8px;height:28px;border-radius:3px;display:block}
+@media (max-width:1100px){.g3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.g3>.c3{grid-column:1/-1}.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
+  .side{border-right:0;border-bottom:1px solid var(--line);padding-left:0}
+  .brand{padding:12px max(16px,env(safe-area-inset-left,0px)) 6px}
+  .nav{flex-direction:row;overflow-x:auto;padding:4px max(16px,env(safe-area-inset-left,0px)) 10px;flex:none}
+  .nav .grp{display:none}
+  .nav a{white-space:nowrap;flex:none}
+  .tally{display:none}
+  .g2,.g3{grid-template-columns:1fr}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pipe{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .top{padding-left:max(16px,env(safe-area-inset-left,0px))}
+  .view{padding-left:max(16px,env(safe-area-inset-left,0px))}
+  .fld{grid-template-columns:1fr}
+  .it{grid-template-columns:1fr}
+  .it .acts{justify-content:flex-start}
+  .who span{display:none}
+}
+.app.nologin{grid-template-columns:1fr}.app.nologin .side,.app.nologin .top{display:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo">談</div><div><b>一談多用</b><small>社工 AI 輔助工作台・Demo</small></div></div>
+    <nav class="nav" id="nav" aria-label="流程"></nav>
+    <div class="tally" id="tally"></div>
+  </aside>
+  <section class="main">
+    <header class="top">
+      <div class="crumb" id="crumb"></div>
+      <span class="pill-fake">合成假資料・數字為示意</span>
+      <div class="who"><i>王</i><span>王怡君 社工</span></div>
+    </header>
+    <div class="view" id="view"></div>
+  </section>
+</div>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+
+
+/* ---------- synthetic data ---------- */
+const TR=[
+ {t:'00:00:15',s:'社工',x:'阿桃姨您好，我是isnt的王社工。今天想聊聊您最近的生活，談話會錄音，只用來整理紀錄，可以嗎？'},
+ {t:'00:00:28',s:'個案',x:'好啦，你要錄就錄。'},
+ {t:'00:01:40',s:'社工',x:'您現在一個人住這裡嗎？'},
+ {t:'00:01:46',s:'個案',x:'對啊，老伴走了快十年了。這間是公寓二樓，沒有電梯。'},
+ {t:'00:03:12',s:'社工',x:'平常家裡誰會來看您？'},
+ {t:'00:03:20',s:'個案',x:'女兒{美玲}在台中，大概一個月打一次電話……兒子很久沒聯絡了。'},
+ {t:'00:04:05',s:'個案',x:'孫女偶爾會傳照片給我看。'},
+ {t:'00:05:41',s:'個案',x:'上個月在浴室滑倒，膝蓋到現在還會痛，上下樓都要扶牆。'},
+ {t:'00:06:20',s:'社工',x:'有去看醫生嗎？'},
+ {t:'00:06:26',s:'個案',x:'去{巷口的診所}拿藥，醫生說是退化。'},
+ {t:'00:06:58',s:'個案',x:'最近都吃泡麵比較方便啦，買菜要走很遠。'},
+ {t:'00:08:05',s:'個案',x:'老了沒用啦，拖累人。'},
+ {t:'00:08:30',s:'社工',x:'聽起來您最近心情不太好？'},
+ {t:'00:08:41',s:'個案',x:'也還好啦，就是晚上睡不太著。'},
+ {t:'00:10:12',s:'個案',x:'如果有人送飯來是很好啦。'}
+];
+const MASK={'美玲':'[家屬姓名]','巷口的診所':'[醫療院所]'};
+
+const ITEMS=[
+ {id:1,sec:'居住與生活',conf:'hi',txt:'獨居，公寓 2 樓、無電梯。',why:'個案明確陳述，與匯入資料一致',src:'00:01:46',use:['狀況說明','轉介']},
+ {id:2,sec:'家庭支持',conf:'hi',txt:'配偶已歿，約 10 年。',why:'個案明確陳述',src:'00:01:46',use:['家系圖']},
+ {id:3,sec:'家庭支持',conf:'hi',txt:'女兒住台中，約每月電話聯繫一次。',why:'個案明確陳述',src:'00:03:20',use:['家系圖','狀況說明','轉介']},
+ {id:4,sec:'家庭支持',conf:'mid',txt:'與兒子關係疏離，久未聯絡。',why:'「很久沒聯絡」可指聯繫頻率，未必是關係疏離',src:'00:03:20',use:['家系圖']},
+ {id:5,sec:'家庭支持',conf:'mid',txt:'有孫女，偶以訊息聯繫。',why:'未說明孫女是哪位子女所生，家系圖暫掛於女兒下',src:'00:04:05',use:['家系圖']},
+ {id:6,sec:'健康與行動',conf:'hi',txt:'上月於浴室跌倒，膝痛持續，上下樓需扶牆。',why:'個案明確陳述',src:'00:05:41',use:['狀況說明','轉介']},
+ {id:7,sec:'健康與行動',conf:'mid',txt:'膝關節退化，於診所就醫取藥。',why:'為個案轉述醫囑，無診斷文件',src:'00:06:26',use:['狀況說明']},
+ {id:8,sec:'居住與生活',conf:'mid',txt:'可能有備餐困難，飲食單一。',why:'由「都吃泡麵」推論而來',src:'00:06:58',use:['狀況說明','轉介']},
+ {id:9,sec:'居住與生活',conf:'hi',txt:'外出購物不便。',why:'個案明確陳述',src:'00:06:58',use:['狀況說明']},
+ {id:10,sec:'情緒與心理',conf:'low',txt:'有自我價值感低的陳述（「老了沒用、拖累人」）。',why:'涉及憂鬱或自殺風險判斷，須由社工評估',src:'00:08:05',use:['狀況說明']},
+ {id:11,sec:'情緒與心理',conf:'low',txt:'有睡眠困擾。',why:'個案稱「還好」，與前句情緒陳述不一致',src:'00:08:41',use:['狀況說明']},
+ {id:12,sec:'服務意願',conf:'hi',txt:'願意接受送餐服務。',why:'個案明確陳述',src:'00:10:12',use:['轉介']}
+];
+const CONF={hi:['高信心','t-hi'],mid:['中信心','t-mid'],low:['低信心','t-low']};
+
+const state={
+  imported:true, demask:false, playing:false, playIdx:3,
+  review:{}, edits:{}, editing:null, filter:'all',
+  risk:'', level:'', note:'', finalized:false,
+  genoSel:'self', genoTab:'pic',
+  unit:'ltc', consent:{basic:true,health:true,life:true,mood:false,econ:true}, sent:false,
+  target:'central', dashProg:'all', dashMode:'m'
+};
+// 預設：高信心多已確認，呈現「審閱進行中」
+[1,2,3,6,9,12].forEach(i=>state.review[i]='ok');
+state.review[8]='edit'; state.edits[8]='有備餐困難：近月多以泡麵果腹，自述買菜需走遠路。';
+
+/* ---------- shell ---------- */
+function counts(){
+  const ai=ITEMS.length, ok=ITEMS.filter(i=>state.review[i.id]==='ok').length, ed=ITEMS.filter(i=>state.review[i.id]==='edit').length;
+  const manual=[state.risk,state.level,state.note.trim()].filter(Boolean).length;
+  return {ai,ok,ed,manual,pending:ai-ok-ed};
+}
+function tally(){
+  const tb=$('#tally'); const rr=route(); if(!(rr.type==='case'&&rr.c==='lin')){tb.style.display='none';return} tb.style.display='';
+  const c=counts(), tot=c.ai+3;
+  $('#tally').innerHTML=`這次訪談（林阿桃 10/14）
+  <div class="bar"><i style="width:${c.ok/tot*100}%;background:var(--ai)"></i><i style="width:${c.ed/tot*100}%;background:var(--human)"></i><i style="width:${c.manual/tot*100}%;background:var(--auto)"></i></div>
+  <div class="row"><span><span class="dot" style="background:var(--ai)"></span>AI 填入、社工確認</span><b>${c.ok}</b></div>
+  <div class="row"><span><span class="dot" style="background:var(--human)"></span>社工修改</span><b>${c.ed}</b></div>
+  <div class="row"><span><span class="dot" style="background:var(--auto)"></span>社工親填</span><b>${c.manual}/3</b></div>
+  <div class="row"><span><span class="dot" style="background:var(--line)"></span>待審閱</span><b>${c.pending}</b></div>
+`;
+}
+/* ---------- 1 intake ---------- */
+const IN_FILES=[['PDF','#B5481F','前單位轉介單_115.pdf','掃描檔・文字辨識','2 頁'],['DOC','#2A5CA8','前單位服務紀錄_112–113.docx','Word','58 頁'],['DOC','#2A5CA8','前單位服務紀錄_114–115.docx','Word','56 頁'],['XLS','#2D7A4E','社會局獨居名冊_115Q3.xlsx','Excel','第 37 列']];
+const IN_FLAGS=[
+ {id:1,w:'阿明',where:'服務紀錄・114/11/05',why:'可能是人名（暱稱）'},
+ {id:2,w:'阿珠姨',where:'服務紀錄・114/11/05',why:'可能是人名（鄰居稱呼）'},
+ {id:3,w:'小美',where:'服務紀錄・113/04/18',why:'可能是人名'},
+ {id:4,w:'長青',where:'服務紀錄・114/02/20',why:'可能是機構名（長青關懷據點）'},
+ {id:5,w:'王老師',where:'服務紀錄・113/09/12',why:'人名＋職稱'},
+ {id:6,w:'春天',where:'服務紀錄・115/03/02',why:'可能是人名，也可能是季節'},
+ {id:7,w:'大同',where:'轉介單・第 2 頁',why:'可能是地名或機構'}
+];
+const IN_TEXT=[
+ ['t','114/11/05 電訪。'],['m','林阿桃','[個案]'],['t','表示女兒'],['m','林美玲','[家屬1]'],['t','上週帶她到'],['m','巷口的診所','[醫療院所]'],['t','回診，膝蓋還是會痛。自述「'],['f',1],['t','都不回來」，晚上常睡不好。前社工'],['m','黃社工','[人員]'],['t','評估案主情緒低落。鄰居'],['f',2],['t','每週會來探望，住址'],['m','北區光明路 25 號 2 樓','[地址]'],['t','。']
+];
+const IN_TL=[
+ ['112/10','前單位開案：獨居，配偶已歿；女兒住台中','hi','轉介單 p.1',''],
+ ['113/04','兒子曾回來同住約半年，後搬離','mid','服務紀錄・113/04/18','past'],
+ ['114/02','膝關節退化，診所定期回診','hi','服務紀錄・114/02/20',''],
+ ['114/11','情緒低落（前社工評估，非個案陳述）','mid','服務紀錄・114/11/05',''],
+ ['115/08','前單位方案結束，轉介本會','hi','轉介單 p.1','now']
+];
+state.inView='masked'; state.inFlags={};
+function vIntake(){
+  const left=IN_FLAGS.filter(f=>!state.inFlags[f.id]).length;
+  const fw=id=>{const f=IN_FLAGS.find(x=>x.id===id),v=state.inFlags[id];
+    if(state.inView==='raw')return `<span style="background:var(--mark);border-radius:4px;padding:0 3px">${esc(f.w)}</span>`;
+    if(v==='mask')return `<span class="mask">[人名]</span>`; if(v==='keep')return esc(f.w);
+    return `<span style="background:var(--mark);border:1px dashed var(--mid);border-radius:4px;padding:0 3px" title="待確認">${esc(f.w)}？</span>`};
+  const text=IN_TEXT.map(p=>p[0]==='t'?esc(p[1]):p[0]==='m'?(state.inView==='raw'?`<span style="background:var(--low-bg);border-radius:4px;padding:0 3px">${esc(p[1])}</span>`:`<span class="mask">${p[2]}</span>`):fw(p[1])).join('');
+  const steps=[['檔案檢查','掃毒、轉成純文字（4 個檔，116 頁）','ok'],['清除隱藏內容','註解 12 則、追蹤修訂 47 處、作者資訊','ok'],['敏感類別隔離','保護性通報相關段落 2 處：不送 AI，標給社工自行閱讀','ok'],['自動去識別化','規則比對 312 處、實體辨識 186 處',left?'wait':'ok'],['欄位帶入與分年抽取','結構化欄位直接帶入；敘述分年送地端模型',left?'idle':'ok']];
+  const rows=[['姓名／年齡','林阿桃，82 歲','au','名冊 第 37 列'],['身分證字號','F2••••••••（已加密）','au','名冊 第 37 列'],['地址','北區••路••號 2 樓','au','名冊 第 37 列'],['福利身分','中低收入戶（效期至 116/06）','au','名冊 第 37 列'],['轉介來源','前單位（服務 3 年，方案結束）','au','轉介單 p.1'],['轉介原因','需持續關懷；膝痛、情緒低落待追蹤','ai','轉介單 p.1「說明」欄']];
+  return `<div class="head"><div><h1>收案匯入：轉介單、前單位紀錄一起進來，社工不用先讀一遍</h1><p>轉介單、前單位三年的服務紀錄、名冊一起上傳。系統先自動去識別化，社工只確認系統沒把握的幾處；結構化欄位直接帶入，敘述才交給地端模型分年抽取。</p></div>
+   <div class="row"><span class="tag t-ai">地端處理・資料不出組織</span><span class="tag t-au">轉介同意書含 AI 處理告知</span></div></div>
+  <div class="grid g3" style="margin-bottom:16px">
+   <div class="stack">
+    <div class="card"><h2>收到的資料</h2><div class="bd" style="display:flex;flex-direction:column;gap:8px">${IN_FILES.map(f=>`<div class="file"><div class="ic" style="background:${f[1]}">${f[0]}</div><div style="flex:1;min-width:0">${f[2]}<div class="muted" style="font-size:12.5px">${f[3]}・${f[4]}</div></div><span class="st ok">✓</span></div>`).join('')}</div></div>
+    <div class="card"><h2>處理流程</h2><div class="bd tl">${steps.map(x=>`<div><i class="${x[2]==='ok'?'':'w'}" style="${x[2]==='wait'?'background:var(--mid)':''}"></i><span><b style="font-weight:500">${x[0]}</b><br><span class="muted" style="font-size:12.5px">${x[1]}</span></span><span style="font-size:12.5px" class="${x[2]==='ok'?'ok':'muted'}">${x[2]==='ok'?'完成':x[2]==='wait'?'等你確認':'—'}</span></div>`).join('')}</div></div>
+   </div>
+   <div class="stack">
+    <div class="card"><h2>遮蔽結果 <small>前單位服務紀錄・114/11/05</small><div class="seg" style="margin-left:auto"><button class="${state.inView==='masked'?'on':''}" data-iv="masked">送進 AI 的版本</button><button class="${state.inView==='raw'?'on':''}" data-iv="raw">原文（僅本單位）</button></div></h2>
+     <div class="bd"><p style="font-size:15.5px;line-height:2;margin:0">${text}</p>
+     <div class="legend" style="margin-top:12px"><span><span class="mask">[代號]</span> 已自動遮蔽</span><span><span style="background:var(--mark);border:1px dashed var(--mid);border-radius:4px;padding:0 3px">名稱？</span> 系統沒把握，等你確認</span></div></div></div>
+    <div class="card"><h2>需要你看的地方 <span class="tag ${left?'t-mid':'t-hi'}">${left?`剩 ${left} 處`:'已全部確認'}</span><small>其餘 498 處已自動遮蔽，不用逐字讀 116 頁</small></h2>
+     <div class="bd scroll-x"><table class="t">${IN_FLAGS.map(f=>{const v=state.inFlags[f.id];return `<tr><td style="white-space:nowrap"><b style="font-weight:500">${esc(f.w)}</b></td><td><span class="muted" style="font-size:13px">${f.where}</span><br>${f.why}</td><td style="text-align:right;white-space:nowrap">${v?`<span class="${v==='mask'?'ok':''}" style="font-size:13px">${v==='mask'?'✓ 已遮蔽':'保留原字'}</span> <button class="btn sm" data-inu="${f.id}">復原</button>`:`<button class="btn sm" data-inm="${f.id}">遮蔽</button> <button class="btn sm" data-ink="${f.id}">保留</button>`}</td></tr>`}).join('')}</table>
+     <div class="row" style="margin-top:10px"><button class="btn sm" id="inAll">示範：全部確認</button><span class="muted" style="font-size:12.5px">確認結果回饋給辨識規則，之後同類詞不再詢問</span></div></div></div>
+   </div>
+   <div class="card c3"><h2>前單位三年歷程 ${left?'<span class="tag t-off" style="text-decoration:none">等待確認</span>':'<span class="tag t-ai">AI 草稿</span>'}</h2><div class="bd" style="${left?'opacity:.45':''}">
+     <div class="tl">${IN_TL.map(t=>`<div><i style="background:${t[4]==='now'?'var(--ai)':t[4]==='past'?'var(--line)':'var(--auto)'}"></i><span><b class="mono" style="font-weight:500">${t[0]}</b>　${esc(t[1])} <span class="tag ${CONF[t[2]][1]}">${CONF[t[2]][0]}</span>${t[4]==='past'?' <span class="tag t-off" style="text-decoration:none">已過時</span>':''}<br><span class="muted" style="font-size:12.5px">出處：${t[3]}</span></span><span></span></div>`).join('')}</div>
+     <div class="alert" style="margin-top:12px"><span>⟲</span><div><b>帶入家系圖與開案訪視</b>同住資訊以最新紀錄為準（獨居）；113 年兒子同住已標為過時。前社工評估另外標示，開案訪視時再由本會社工確認。</div></div>
+   </div></div>
+  </div>
+  <div class="card"><h2>帶入的欄位 <span class="tag t-au">自動帶入 5</span><span class="tag t-ai">AI 解析 1</span><small>結構化欄位直接對應，不經 AI</small></h2>
+   <div class="bd scroll-x"><table class="t"><tr><th>欄位</th><th>內容</th><th>出處</th><th>來源</th></tr>
+   ${rows.map(r=>`<tr><td style="white-space:nowrap">${r[0]}</td><td>${esc(r[1])}</td><td class="muted" style="font-size:13px">${r[3]}</td><td><span class="tag ${r[2]==='au'?'t-au':'t-ai'}">${r[2]==='au'?'自動帶入':'AI 解析'}</span></td></tr>`).join('')}</table>
+   <div class="row" style="margin-top:14px;justify-content:space-between"><span class="muted" style="font-size:13px">已建立個案，排入「待開案訪視」：10/14 家訪</span><a class="btn pri" href="#lin:visit" style="text-decoration:none">下一步：開案訪視 →</a></div></div></div>`;
+}
+function bindIntake(){
+  document.querySelectorAll('[data-iv]').forEach(b=>b.onclick=()=>{state.inView=b.dataset.iv;render()});
+  document.querySelectorAll('[data-inm]').forEach(b=>b.onclick=()=>{state.inFlags[b.dataset.inm]='mask';render()});
+  document.querySelectorAll('[data-ink]').forEach(b=>b.onclick=()=>{state.inFlags[b.dataset.ink]='keep';render()});
+  document.querySelectorAll('[data-inu]').forEach(b=>b.onclick=()=>{delete state.inFlags[b.dataset.inu];render()});
+  $('#inAll').onclick=()=>{IN_FLAGS.forEach(f=>{state.inFlags[f.id]=(f.id===6?'keep':'mask')});render()};
+}
+
+/* ---------- 2 visit ---------- */
+function fmtLine(x){
+  return x.replace(/\{(.+?)\}/g,(m,w)=>state.demask?`<span class="mask">${esc(w)}</span>`:`<span class="mask">${MASK[w]}</span>`);
+}
+function vVisitRec(){
+  const bars=Array.from({length:90},(_,i)=>{const h=18+Math.abs(Math.sin(i*1.7)*60+Math.cos(i*.6)*25);return `<i style="height:${Math.min(100,h)}%" class="${i/90<= (state.playIdx+1)/TR.length?'p':''}"></i>`}).join('');
+  return `<div class="head"><div><h1>開案訪視：社工照常訪談，AI 負責整理</h1><div class="row" style="margin:4px 0 6px"><span class="muted" style="font-size:13px">個案不願錄音、環境太吵？</span><a class="btn sm" href="#formimp" style="text-decoration:none">改用訪視表單（Google 表單／紙本拍照）</a></div><p>取得知情同意後錄音（10/14，12 分 06 秒）。逐字稿先去識別化，再交給組織地端的模型做語意辨識；每一筆抽出的資訊都綁定逐字稿時間點。</p></div>
+  <div class="row"><span class="tag t-au">✓ 知情同意已簽署</span><span class="tag t-ai">地端模型・資料不出組織</span><span class="tag t-ai">送 AI 前已自動去識別化</span></div></div>
+  <div class="grid g2">
+   <div class="card"><div class="player"><button class="play" id="play" aria-label="${state.playing?'暫停':'播放'}">${state.playing?'❚❚':'▶'}</button><div class="wave" id="wave" aria-hidden="true">${bars}</div><span class="mono muted" style="font-size:13px">${TR[state.playIdx].t.slice(3)} / 12:06</span></div>
+    <div class="bd"><div class="row" style="justify-content:space-between;margin-bottom:8px"><b style="font-size:15px">逐字稿</b><label class="row" style="font-size:13px;gap:6px"><input type="checkbox" id="demask" ${state.demask?'checked':''}> 顯示遮蔽前原文（僅本單位可見）</label></div>
+    <div class="tr" id="tr">${TR.map((l,i)=>`<div class="ln ${i===state.playIdx?'cur':''}" data-i="${i}" id="ln${i}"><span class="tc">${l.t.slice(3)}</span><span class="sp ${l.s==='個案'?'c':''}">${l.s==='個案'?'[個案]':'社工'}</span><span>${fmtLine(esc(l.x))}</span></div>`).join('')}</div></div></div>
+   <div class="card"><h2>AI 抽取結果 <small>12 筆・點一下跳到原話</small></h2>
+    <div class="bd"><div class="ex">${ITEMS.map(it=>`<div class="exi ${it.conf}" data-src="${it.src}" tabindex="0"><div class="r1"><span class="tag ${CONF[it.conf][1]}">${CONF[it.conf][0]}</span><button class="src" data-src="${it.src}">${it.src.slice(3)}</button></div><p>${esc(it.txt)}</p><div class="meta">用於 ${it.use.map(u=>`<span class="tag t-ai" style="font-weight:400">${u}</span>`).join('')}</div></div>`).join('')}</div>
+    <div class="row" style="margin-top:14px;justify-content:flex-end"><a class="btn pri" href="#lin:status" style="text-decoration:none">去審閱個案狀況說明 →</a></div></div></div>
+  </div>`;
+}
+let playTimer=null;
+function jumpTo(src){
+  const i=TR.findIndex(l=>l.t===src); if(i<0)return;
+  state.playIdx=i; render();
+  const el=$('#ln'+i); if(el){el.classList.add('flash'); el.scrollIntoView({block:'center',behavior:'smooth'}); setTimeout(()=>el.classList.remove('flash'),1400)}
+}
+function bindVisitRec(){
+  $('#demask').onchange=e=>{state.demask=e.target.checked; render()};
+  $('#play').onclick=()=>{
+    state.playing=!state.playing;
+    clearInterval(playTimer);
+    if(state.playing){playTimer=setInterval(()=>{ if(!location.hash.endsWith(':visit')){clearInterval(playTimer);state.playing=false;return}
+      state.playIdx=(state.playIdx+1)%TR.length; render(); },1300)}
+    render();
+  };
+  document.querySelectorAll('.ln').forEach(el=>el.onclick=()=>{state.playIdx=+el.dataset.i; render()});
+  document.querySelectorAll('.exi').forEach(el=>{el.onclick=()=>jumpTo(el.dataset.src); el.onkeydown=e=>{if(e.key==='Enter')jumpTo(el.dataset.src)}});
+}
+
+/* ---------- 3 status ---------- */
+function vStatus(){
+  const c=counts();
+  const lowLeft=ITEMS.filter(i=>i.conf==='low'&&!state.review[i.id]).length;
+  const canFinal=c.pending===0&&state.risk&&state.level&&state.note.trim();
+  const shown=ITEMS.filter(i=>state.filter==='all'||(state.filter==='todo'?!state.review[i.id]:i.conf===state.filter));
+  const secs=[...new Set(shown.map(i=>i.sec))];
+  const diffs=ITEMS.filter(i=>state.review[i.id]==='edit').map(i=>`#${i.id} ${i.sec}\n- AI：${i.txt}\n+ 社工：${state.edits[i.id]}`).join('\n\n');
+  const fbtn=(k,l,n)=>`<button class="chip ${state.filter===k?'on':''}" data-f="${k}">${l}${n!==undefined?` ${n}`:''}</button>`;
+  return `<div class="head"><div><h1>個案狀況說明：每一句都標信心等級</h1><p>綠色掃過即可、金色要核對、橘色一定要社工判斷。風險判定、需求等級與評估意見不由 AI 填寫。</p></div>
+   <div class="row">${state.finalized?'<span class="tag t-au">✓ 已定稿 10/14 16:20</span>':`<span class="tag t-mid">審閱中・剩 ${c.pending} 筆</span>`}</div></div>
+  <div class="grid" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)">
+   <div class="card"><h2><span>AI 起草內容</span><div class="filters" style="margin-left:auto">${fbtn('all','全部',ITEMS.length)}${fbtn('todo','待審閱',c.pending)}${fbtn('hi','高',ITEMS.filter(i=>i.conf==='hi').length)}${fbtn('mid','中',ITEMS.filter(i=>i.conf==='mid').length)}${fbtn('low','低',ITEMS.filter(i=>i.conf==='low').length)}</div></h2>
+    <div class="bd">${secs.length?secs.map(s=>`<div class="sec"><h3>${s}</h3>${shown.filter(i=>i.sec===s).map(itemRow).join('')}</div>`).join(''):'<p class="muted">這個篩選條件下沒有項目。</p>'}</div></div>
+   <div class="stack">
+    <div class="card"><h2>審閱進度</h2><div class="bd">
+      <div class="row" style="justify-content:space-between;align-items:flex-end"><div><div class="big">${c.ok+c.ed}<span class="muted" style="font-size:18px"> / ${ITEMS.length}</span></div><div class="muted" style="font-size:13px">已處理的 AI 內容</div></div><div style="text-align:right;font-size:13px">確認 ${c.ok}・修改 ${c.ed}<br><span class="${lowLeft?'ng':'ok'}">${lowLeft?`低信心尚有 ${lowLeft} 筆`:'低信心皆已處理'}</span></div></div>
+      <div class="meter" style="margin-top:10px"><i style="width:${c.ok/ITEMS.length*100}%;background:var(--ai)"></i><i style="width:${c.ed/ITEMS.length*100}%;background:var(--human)"></i></div>
+      ${ITEMS.some(i=>i.conf==='hi'&&!state.review[i.id])?`<button class="btn sm" id="okHi" style="margin-top:10px">高信心一次確認（${ITEMS.filter(i=>i.conf==='hi'&&!state.review[i.id]).length} 筆）</button>`:'<div class="muted" style="font-size:12.5px;margin-top:8px">高信心已全部確認，只剩中、低信心要你看</div>'}
+    </div></div>
+    <div class="card"><h2>社工親填 <span class="tag t-hu">人工填入</span></h2><div class="bd manual">
+      <label for="risk">風險判定<select id="risk"><option value="">請選擇</option>${['低','中','高'].map(v=>`<option ${state.risk===v?'selected':''}>${v}</option>`).join('')}</select></label>
+      <label for="level">建議需求等級<select id="level"><option value="">請選擇</option>${['第 1 級','第 2 級','第 3 級','第 4 級'].map(v=>`<option ${state.level===v?'selected':''}>${v}</option>`).join('')}</select></label>
+      <label for="note">社工評估意見<textarea id="note" placeholder="例：情緒低落陳述需追蹤，下次訪視以老人憂鬱量表評估。">${esc(state.note)}</textarea></label>
+      <button class="btn sm" id="fillDemo" type="button" style="justify-self:start">填入示範內容</button>
+    </div></div>
+    <div class="card"><h2>定稿</h2><div class="bd stack" style="gap:10px">
+      ${state.finalized?`<div class="ok" style="font-size:14px">✓ 已定稿。AI 原稿與定稿的差異已留存。</div><div class="diff">${esc(diffs||'沒有修改')}</div>${supFlow()}`:
+      `<div class="muted" style="font-size:13px">${canFinal?'可以定稿了。':'所有項目處理完，並填好三個人工欄位後才能定稿。'}</div><button class="btn pri" id="final" ${canFinal?'':'disabled'}>確認定稿</button>`}
+    </div></div>
+   </div>
+  </div>`;
+}
+function itemRow(i){
+  const st=state.review[i.id], ed=state.editing===i.id;
+  return `<div class="it ${st?'done':''}"><div><span class="tag ${CONF[i.conf][1]}">${CONF[i.conf][0]}</span></div>
+   <div class="txt">${ed?`<textarea id="ed${i.id}" aria-label="修改內容">${esc(state.edits[i.id]||i.txt)}</textarea>`:(st==='edit'?`<span>${esc(state.edits[i.id])}</span><div class="why" style="text-decoration:line-through">AI 原稿：${esc(i.txt)}</div>`:esc(i.txt))}
+   <div class="why">${esc(i.why)}・出處 <button class="src" data-src="${i.src}">${i.src.slice(3)}</button></div></div>
+   <div class="acts">${ed?`<button class="btn sm pri" data-save="${i.id}">儲存</button><button class="btn sm" data-cancel="1">取消</button>`:
+     st?`<span class="stt ${st==='ok'?'ok':''}" style="${st==='edit'?'color:var(--human)':''}">${st==='ok'?'✓ 已確認':'✎ 已修改'}</span><button class="btn sm" data-undo="${i.id}">復原</button>`:
+     `<button class="btn sm" data-ok="${i.id}">確認</button><button class="btn sm" data-edit="${i.id}">修改</button>`}</div></div>`;
+}
+function bindStatus(){
+  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{state.filter=b.dataset.f;render()});
+  document.querySelectorAll('[data-ok]').forEach(b=>b.onclick=()=>{state.review[b.dataset.ok]='ok';render()});
+  document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{state.editing=+b.dataset.edit;render();const t=$('#ed'+b.dataset.edit);t&&t.focus()});
+  document.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>{const id=+b.dataset.save,v=$('#ed'+id).value.trim();const orig=ITEMS.find(x=>x.id===id).txt;
+    if(v&&v!==orig){state.edits[id]=v;state.review[id]='edit'}else state.review[id]='ok'; state.editing=null;render()});
+  document.querySelectorAll('[data-cancel]').forEach(b=>b.onclick=()=>{state.editing=null;render()});
+  document.querySelectorAll('[data-undo]').forEach(b=>b.onclick=()=>{delete state.review[b.dataset.undo];state.finalized=false;render()});
+  document.querySelectorAll('.src').forEach(b=>b.onclick=e=>{e.stopPropagation();state.vMode='rec';location.hash='lin:visit';setTimeout(()=>jumpTo(b.dataset.src),30)});
+  $('#risk').onchange=e=>{state.risk=e.target.value;render()};
+  $('#level').onchange=e=>{state.level=e.target.value;render()};
+  $('#note').oninput=e=>{state.note=e.target.value;tally();const f=$('#final');if(f){const c=counts();f.disabled=!(c.pending===0&&state.risk&&state.level&&state.note.trim())}};
+  $('#note').onchange=()=>render();
+  $('#fillDemo').onclick=()=>{state.risk='中';state.level='第 3 級';state.note='情緒低落與自我價值感低之陳述需追蹤，未表達自殺意念；下次訪視以老人憂鬱量表評估。建議連結送餐與長照需要評估。';render()};
+  const f=$('#final'); if(f)f.onclick=()=>{state.finalized=true;render()};
+  const h=$('#okHi'); if(h)h.onclick=()=>{ITEMS.filter(i=>i.conf==='hi'&&!state.review[i.id]).forEach(i=>state.review[i.id]='ok');render()};
+  document.querySelectorAll('[data-sup]').forEach(b=>b.onclick=()=>{state.sup=b.dataset.sup;render()});
+}
+state.sup='none';
+function supFlow(){
+  const s=state.sup;
+  if(s==='none') return `<div style="border-top:1px solid var(--line-2);padding-top:10px"><div class="muted" style="font-size:13px;margin-bottom:6px">定稿後送督導線上審核，取代紙本核章、掃描、上傳。</div><button class="btn pri" data-sup="sent">送陳督導審核</button></div>`;
+  if(s==='sent') return `<div style="border-top:1px solid var(--line-2);padding-top:10px;font-size:14px">⏳ 已送陳督導審核（10/14 16:22）<div class="row" style="margin-top:8px"><button class="btn sm" data-sup="ok">示範：督導核可</button><button class="btn sm" data-sup="back">示範：督導退回</button></div></div>`;
+  if(s==='back') return `<div class="alert"><span>↩</span><div><b>陳督導退回（10/14 17:02）</b>「請補充送餐服務啟動日期。」<div class="row" style="margin-top:6px"><button class="btn sm pri" data-sup="sent">修改後重新送審</button></div></div></div>`;
+  return `<div class="ok" style="font-size:14px;border-top:1px solid var(--line-2);padding-top:10px">✓ 陳督導 10/14 17:05 線上核可（電子簽核，寫入稽核日誌）</div>`;
+}
+
+/* ---------- 4 genogram ---------- */
+const PEOPLE={
+  hus:{name:'配偶',sub:'已歿・約 10 年前',src:'00:01:46',q:'老伴走了快十年了。',conf:'hi',by:'AI 抽取'},
+  self:{name:'林阿桃',sub:'82 歲・個案・獨居',src:'匯入',q:'名冊第 37 列；訪談 01:46「這間是公寓二樓」',conf:'hi',by:'自動帶入'},
+  son:{name:'兒子',sub:'58 歲・久未聯絡',src:'00:03:20',q:'兒子很久沒聯絡了。',conf:'mid',by:'AI 抽取；年齡來自戶籍資料'},
+  dau:{name:'女兒',sub:'54 歲・住台中',src:'00:03:20',q:'女兒在台中，大概一個月打一次電話。',conf:'hi',by:'AI 抽取'},
+  sil:{name:'女婿',sub:'訪談未提及',src:'社工補充',q:'社工依過往紀錄補上。',conf:'hi',by:'社工新增'},
+  gd:{name:'孫女',sub:'約 20 歲',src:'00:04:05',q:'孫女偶爾會傳照片給我看。',conf:'mid',by:'AI 抽取；歸屬待確認'}
+};
+function vGeno(){
+  const p=PEOPLE[state.genoSel];
+  const node=(id,shape)=>`<g class="node ${state.genoSel===id?'sel':''}" data-p="${id}" tabindex="0" role="button" aria-label="${PEOPLE[id].name}">${shape}</g>`;
+  const S='stroke="var(--fg)" stroke-width="3"', F='fill="var(--panel)"';
+  const json={case:'A00',members:Object.entries(PEOPLE).map(([k,v])=>({id:k,label:v.name,note:v.sub,source:v.src,confidence:v.conf}))};
+  return `<div class="head"><div><h1>家系圖與服務紀錄：點家人，就看到他在本會的服務</h1><p>家系圖從訪談語句自動排出。點選成員，右側顯示這個人來自哪一句話，以及他在本會各方案的服務紀錄。虛線是關係不確定的地方，等社工確認。</p></div>
+   <div class="row"><button class="btn">＋ 新增成員</button><div class="seg"><button class="${state.genoTab==='pic'?'on':''}" data-gt="pic">圖</button><button class="${state.genoTab==='json'?'on':''}" data-gt="json">JSON</button></div></div></div>
+  <div class="grid" style="grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)">
+   <div class="card geno"><div class="bd">${state.genoTab==='pic'?`
+    <svg viewBox="0 0 760 470" role="img" aria-label="林阿桃家系圖">
+     <rect x="370" y="36" width="140" height="140" rx="14" fill="none" stroke="var(--fg-3)" stroke-width="2" stroke-dasharray="8 6"/>
+     <polyline points="190,130 190,170 440,170 440,140" fill="none" ${S}/>
+     <line x1="315" y1="170" x2="315" y2="240" ${S}/>
+     <line x1="160" y1="240" x2="520" y2="240" ${S}/>
+     <line x1="160" y1="240" x2="160" y2="282" stroke="var(--low)" stroke-width="3" stroke-dasharray="7 6"/>
+     <line x1="520" y1="240" x2="520" y2="282" stroke="var(--ai)" stroke-width="5"/>
+     <polyline points="520,358 520,392 660,392 660,358" fill="none" ${S}/>
+     <line x1="590" y1="392" x2="590" y2="418" stroke="var(--mid)" stroke-width="3" stroke-dasharray="7 6"/>
+     ${node('hus',`<rect class="shape" x="152" y="62" width="76" height="76" ${F} ${S}/><line x1="154" y1="64" x2="226" y2="136" ${S}/><line x1="226" y1="64" x2="154" y2="136" ${S}/>`)}
+     ${node('self',`<circle cx="440" cy="100" r="46" fill="none" stroke="var(--ai)" stroke-width="3"/><circle class="shape" cx="440" cy="100" r="36" fill="var(--ai-bg)" stroke="var(--ai)" stroke-width="3"/>`)}
+     ${node('son',`<rect class="shape" x="122" y="282" width="76" height="76" ${F} ${S}/>`)}
+     ${node('dau',`<circle class="shape" cx="520" cy="320" r="38" ${F} ${S}/>`)}
+     ${node('sil',`<rect class="shape" x="622" y="282" width="76" height="76" ${F} stroke="var(--fg)" stroke-width="3" stroke-dasharray="6 5"/>`)}
+     ${node('gd',`<circle class="shape" cx="590" cy="440" r="0.1" fill="none"/><circle class="shape" cx="590" cy="440" r="22" ${F} stroke="var(--fg)" stroke-width="3"/>`)}
+     <text class="gtext" x="140" y="104" text-anchor="end" font-size="17">配偶</text><text class="gsub" x="140" y="126" text-anchor="end" font-size="14">已歿</text>
+     <text class="gtext" x="522" y="96" font-size="18" font-weight="700">林阿桃 82</text><text class="gsub" x="522" y="120" font-size="14">個案・獨居</text>
+     <text class="gtext" x="110" y="318" text-anchor="end" font-size="17">兒子 58</text>
+     <text class="gsub" x="172" y="266" font-size="13" fill="var(--low)">久未聯絡（待確認）</text>
+     <text class="gtext" x="470" y="318" text-anchor="end" font-size="17">女兒 54</text><text class="gsub" x="470" y="340" text-anchor="end" font-size="14">台中</text>
+     <text class="gsub" x="532" y="266" font-size="13">每月電話</text>
+     <text class="gtext" x="710" y="318" font-size="17">女婿</text>
+     <text class="gtext" x="622" y="446" font-size="16">孫女</text><text class="gsub" x="672" y="446" font-size="13">歸屬待確認</text>
+    </svg>
+    <div class="legend" style="margin-top:6px"><span>□ 男</span><span>○ 女</span><span>◎ 個案</span><span>╳ 歿</span><span>┅ 框：同住範圍</span><span style="color:var(--low)">┅ 線：AI 推論，待確認</span></div>`:
+    `<pre class="json">${esc(JSON.stringify(json,null,2))}</pre><p class="muted" style="font-size:13px;margin:8px 0 0">同一份家系資料，也能以 JSON 交給其他系統使用。</p>`}
+   </div></div>
+   <div class="stack">
+    <div class="card"><h2>${p.name} <span class="tag ${CONF[p.conf][1]}">${CONF[p.conf][0]}</span></h2><div class="bd stack" style="gap:10px">
+      <div>${p.sub}</div>
+      <div style="font-size:14px"><span class="muted">來源</span>　${p.by}</div>
+      <div style="font-size:14px;background:var(--panel-2);border-radius:8px;padding:10px 12px">「${esc(p.q)}」<div class="muted mono" style="font-size:12px;margin-top:4px">${p.src}</div></div>
+      <div class="row"><button class="btn sm">修改</button>${p.conf==='mid'?'<button class="btn sm">確認關係</button>':''}</div>
+    </div></div>
+    ${personCard(L_PS[state.genoSel])}</div>
+   </div>
+  </div>`;
+}
+function bindGeno(){
+  document.querySelectorAll('[data-p]').forEach(g=>{g.onclick=()=>{state.genoSel=g.dataset.p;render()};g.onkeydown=e=>{if(e.key==='Enter'){state.genoSel=g.dataset.p;render()}}});
+  document.querySelectorAll('[data-gt]').forEach(b=>b.onclick=()=>{state.genoTab=b.dataset.gt;render()});
+}
+
+/* ---------- 5 referral ---------- */
+const CONSENT=[['basic','基本資料與聯絡方式'],['health','健康與行動'],['life','生活與家庭狀況'],['mood','情緒與心理'],['econ','經濟與福利身分']];
+const UNITS={
+ ltc:{name:'北區長期照顧管理中心',type:'長照需要評估',need:['basic','health'],fields:[
+   ['基本資料','個案基本資料・共享層','au','basic','林阿桃，82 歲，女，獨居；地址與電話送出時加密','匯入名冊'],
+   ['轉介原因','申請原因・共享層','hu','basic',null,'社工親填'],
+   ['日常生活功能','日常生活功能・共享層','ai','health','可自行進食如廁；上下樓需扶牆；上月浴室跌倒，膝痛持續。','訪談 05:41、06:26'],
+   ['居家環境','居家環境評估・共享層','ai','life','公寓 2 樓無電梯；浴室無扶手與防滑設施。','訪談 01:46'],
+   ['家庭支持','照顧者與支持系統・共享層','ai','life','獨居；女兒住台中，約每月電話一次；兒子久未聯絡。','家系圖'],
+   ['情緒與心理觀察','其他觀察・敏感層','ai','mood','有自我價值感低之陳述，社工將以量表評估。','狀況說明（定稿）'],
+   ['經濟與福利身分','福利身分・共享層','au','econ','中低收入戶（證明效期至 116/06）','匯入名冊'],
+   ['期待服務','申請服務項目・共享層','hu','basic',null,'社工親填']]},
+ mh:{name:'北區社區心理衛生中心',type:'心理關懷轉介',need:['basic','mood'],fields:[
+   ['基本資料','個案基本資料','au','basic','林阿桃，82 歲，女，獨居','匯入名冊'],
+   ['轉介原因','轉介事由','hu','basic',null,'社工親填'],
+   ['情緒與心理觀察','情緒狀態描述','ai','mood','有自我價值感低之陳述；自述睡眠不佳。','訪談 08:05、08:41'],
+   ['家庭支持','支持系統','ai','life','獨居；女兒住台中，約每月電話一次。','家系圖'],
+   ['風險評估','自傷風險評估','hu','mood',null,'社工親填']]},
+ meal:{name:'本會送餐服務（內部照會）',type:'內部照會',need:['basic'],fields:[
+   ['基本資料','長者基本資料','au','basic','林阿桃，82 歲；送餐地址送出時加密','匯入名冊'],
+   ['飲食狀況','飲食與備餐狀況','ai','life','有備餐困難：近月多以泡麵果腹，自述買菜需走遠路。','狀況說明（社工已修改）'],
+   ['飲食禁忌','飲食禁忌與偏好','hu','health',null,'社工親填'],
+   ['開始日期','希望開始日期','hu','basic',null,'社工親填']]}
+};
+const HU_DEMO={'轉介原因':'近一個月跌倒、膝痛，上下樓需扶牆，影響外出購物與洗澡；申請長照需要評估。個案本人同意申請。','期待服務':'居家服務、浴室扶手與輔具評估；送餐服務已啟動。','飲食禁忌':'無特殊禁忌，偏好軟食。','開始日期':'115/10/20','風險評估':'中；未表達自殺意念。'};
+state.hu={};
+function vReferralMain(){
+  const u=UNITS[state.unit];
+  const blocked=u.need.filter(n=>!state.consent[n]);
+  const fl=u.fields.map(f=>({k:f[0],to:f[1],src:f[2],cat:f[3],v:f[4],from:f[5],off:!state.consent[f[3]]}));
+  const huMissing=fl.filter(f=>f.src==='hu'&&!f.off&&!(state.hu[f.k]||'').trim()).length;
+  const sendN=fl.filter(f=>!f.off).length, offN=fl.length-sendN;
+  const canSend=!blocked.length&&!huMissing;
+  const lab={ai:['AI 填入','t-ai'],hu:['人工填入','t-hu'],au:['自動帶入','t-au']};
+  return `<div class="head"><div><h1>轉介表單：選好接收單位，就套用對方格式</h1><p>直接用定稿後的狀況說明與家系圖組成；每欄標示來源與分級（公開層／共享層／敏感層）。個案沒同意的類別不會傳出，只傳轉介資訊包定義的必要欄位。</p></div></div>
+  <div class="grid g3">
+   <div class="card"><h2>設定</h2><div class="bd stack" style="gap:14px">
+     <label style="display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--fg-2)" for="unit">接收單位<select id="unit" style="border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--panel)">${Object.entries(UNITS).map(([k,v])=>`<option value="${k}" ${state.unit===k?'selected':''}>${v.name}</option>`).join('')}</select></label>
+     <div><div style="font-size:13px;color:var(--fg-2)">知情同意 <span class="muted">10/14 簽署・效期 6 個月</span></div>
+      <div class="consent">${CONSENT.map(([k,l])=>`<label><input type="checkbox" data-c="${k}" ${state.consent[k]?'checked':''}> ${l}</label>`).join('')}</div>
+      <div class="muted" style="font-size:12.5px">示範可點選切換；正式版依同意書帶入，變更需重簽。</div></div>
+   </div></div>
+   <div class="card"><h2>${u.type} → ${u.name} <small>傳送 ${sendN} 欄${offN?`，${offN} 欄依同意不傳`:''}</small></h2>
+    <div>${blocked.length?`<div class="alert" style="margin:14px">⚠<div><b>無法轉介到這個單位</b>個案未同意提供「${blocked.map(b=>CONSENT.find(c=>c[0]===b)[1]).join('、')}」，這是此單位的必要資料。請先與個案討論並更新同意書。</div></div>`:''}
+    ${fl.map(f=>`<div class="fld ${f.off?'off':f.src}"><div class="k">${f.k}<small>→ ${f.to}</small></div>
+      <div class="v">${f.off?'（個案未同意提供，不傳送）':f.src==='hu'?`<textarea data-hu="${esc(f.k)}" rows="2" placeholder="由社工填寫" aria-label="${esc(f.k)}">${esc(state.hu[f.k]||'')}</textarea>`:esc(f.v)}<small>${f.off?'':'出處：'+f.from}</small></div>
+      <div>${f.off?'<span class="tag t-off">不傳送</span>':`<span class="tag ${lab[f.src][1]}">${lab[f.src][0]}</span>`}</div></div>`).join('')}
+    <div class="row" style="padding:12px 14px"><button class="btn sm" id="huDemo">填入示範內容</button></div></div></div>
+   <div class="card c3"><h2>送出前檢查</h2><div class="bd stack" style="gap:12px">
+     <div class="check">
+      <div class="${blocked.length?'ng':'ok'}">${blocked.length?'✕':'✓'}<span>接收單位在同意範圍內</span></div>
+      <div class="${state.finalized?'ok':'ng'}">${state.finalized?'✓':'!'}<span>狀況說明${state.finalized?'已定稿':'尚未定稿（示範仍可送出）'}</span></div>
+      <div class="${huMissing?'ng':'ok'}">${huMissing?'✕':'✓'}<span>人工欄位 ${huMissing?`還差 ${huMissing} 欄`:'已填寫'}</span></div>
+      <div class="ok">✓<span>AI 欄位皆附出處</span></div>
+      <div class="ok">✓<span>${offN} 欄未獲同意，不會傳出</span></div>
+     </div>
+     ${state.sent?`<div class="ok" style="font-size:14px">✓ 已產出轉介資料包（10/16 09:12）</div>
+      <div class="muted" style="font-size:12.5px">依現行流程送出：主管核章後，經原有管道（公文、傳真或方案平台）送達。工具不在機構之間直接傳遞個案資料。</div>
+      <div class="tl"><div><i></i><span>產出資料包</span><span class="mono muted">10/16 09:12</span></div><div><i></i><span>主管核章</span><span class="mono muted">10/16 11:30</span></div><div><i></i><span>送出（傳真）</span><span class="mono muted">10/16 14:05</span></div><div><i></i><span>對方回覆：已收案</span><span class="mono muted">10/18</span></div><div><i class="w"></i><span class="muted">首次服務</span><span class="mono muted">預計 10/23</span></div></div>
+      <button class="btn sm" id="toTrack">看資料包與追蹤 →</button>`:
+     `<button class="btn pri" id="send" ${canSend?'':'disabled'}>產出轉介資料包</button><div class="muted" style="font-size:12.5px">依對方格式帶入，接收單位不用重新登打；送出仍走現行管道與公部門簽核，進度記錄回到這裡。</div>`}
+   </div></div>
+  </div>`;
+}
+function bindReferralMain(){
+  $('#unit').onchange=e=>{state.unit=e.target.value;state.sent=false;render()};
+  document.querySelectorAll('[data-c]').forEach(c=>c.onchange=()=>{state.consent[c.dataset.c]=c.checked;state.sent=false;render()});
+  document.querySelectorAll('[data-hu]').forEach(i=>{i.oninput=()=>{state.hu[i.dataset.hu]=i.value};i.onchange=()=>render()});
+  $('#huDemo').onclick=()=>{Object.assign(state.hu,HU_DEMO);render()};
+  const s=$('#send'); if(s)s.onclick=()=>{state.sent=true;render()};
+  const tt=$('#toTrack'); if(tt)tt.onclick=()=>{state.refTab='word';render()};
+}
+
+/* ---------- 5b referral: templates, word, mail ---------- */
+state.refTab='content'; state.tplImported=false; state.tplCustom=[]; state.mailCopied='';
+const TPL_UNITS=[
+ ['ltc','北區長期照顧管理中心','系統內建範本','8 欄'],
+ ['mh','北區社區心理衛生中心','系統內建範本','5 欄'],
+ ['demo','示範社區關懷協會（無系統）','匯入對方 Word 轉介單','11 欄']
+];
+const TPL_FIELDS=[
+ ['個案姓名','基本資料・姓名','au','林阿桃'],
+ ['性別／年齡','基本資料・性別、年齡','au','女／82 歲'],
+ ['聯絡電話','基本資料・電話（加密欄位）','au','09••-•••-•••'],
+ ['居住地址','基本資料・地址','au','北區••路••號 2 樓'],
+ ['家庭狀況','家系圖・同住與支持系統','ai','獨居；配偶已歿；女兒住台中，約每月電話一次；兒子久未聯絡。'],
+ ['健康狀況','個案狀況說明・健康與行動','ai','膝關節退化，上月浴室跌倒，上下樓需扶牆。'],
+ ['經濟狀況','基本資料・福利身分','au','中低收入戶（效期至 116/06）'],
+ ['緊急聯絡人','轉介單・緊急聯絡人','ai','女兒（台中），電話待確認'],
+ ['轉介原因',null,'hu','近月跌倒、膝痛，外出購物與備餐困難；需社區關懷與送餐評估。'],
+ ['希望提供之服務',null,'hu','社區關懷訪視、送餐、陪同就醫'],
+ ['轉介單位聯絡人','系統使用者・社工資料','au','isnt社會福利基金會　王怡君 社工　[電話]']
+];
+function vReferral(){
+  const tab=k=>`<button class="${state.refTab===k[0]?'on':''}" data-rt="${k[0]}">${k[1]}</button>`;
+  const body=state.refTab==='content'?vReferralMain():state.refTab==='tpl'?vTpl():vWord();
+  return `<div class="row" style="margin-bottom:14px"><div class="seg">${[['content','① 轉介內容'],['tpl','② 表單範本'],['word','③ 資料包與追蹤']].map(tab).join('')}</div><span class="muted" style="font-size:13px">接收單位：示範社區關懷協會（無系統）示範於 ②③</span></div>${body}`;
+}
+function vTpl(){
+  const imp=state.tplImported;
+  const lab={au:['自動帶入','t-au'],ai:['AI 填入','t-ai'],hu:['社工親填','t-hu']};
+  return `<div class="head"><div><h1>表單範本：每個單位的轉介單都不一樣</h1><p>可以自己新增需要的欄位，或直接匯入對方的 Word／PDF 轉介單。系統辨識出欄位後，對應到現有資料；系統沒有的欄位留給社工填。</p></div></div>
+  <div class="grid" style="grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr)">
+   <div class="stack">
+    <div class="card"><h2>接收單位範本</h2><div class="bd" style="display:flex;flex-direction:column;gap:8px">${TPL_UNITS.map(u=>`<div class="file" style="${u[0]==='demo'?'box-shadow:inset 0 0 0 2px var(--nav)':''}"><div style="flex:1;min-width:0"><b style="font-weight:500">${u[1]}</b><div class="muted" style="font-size:12.5px">${u[2]}・${u[3]}</div></div></div>`).join('')}</div></div>
+    <div class="card"><h2>建立新範本</h2><div class="bd stack" style="gap:10px">
+     <button class="btn pri" id="tplImport">${imp?'✓ 已匯入：示範協會轉介單.docx':'匯入對方轉介單（Word／PDF）'}</button>
+     <button class="btn" id="tplAdd">＋ 自訂欄位</button>
+     ${state.tplCustom.map((c,i)=>`<div class="file"><span style="flex:1">${esc(c)}</span><span class="tag t-hu">社工親填</span></div>`).join('')}
+     <p class="muted" style="font-size:12.5px;margin:0">範本只存欄位名稱與格式，不含任何個案資料，可以分享給其他單位使用。</p>
+    </div></div>
+   </div>
+   <div class="card"><h2>欄位對應 <small>示範社區關懷協會轉介單</small>${imp?'<span class="tag t-au" style="margin-left:auto">辨識 11 欄・9 欄自動對應・2 欄社工親填</span>':''}</h2>
+    <div class="bd scroll-x">${imp?`<table class="t"><tr><th>對方表單欄位</th><th>對應到系統的資料</th><th>來源</th></tr>
+     ${TPL_FIELDS.map(f=>`<tr><td>${f[0]}</td><td>${f[1]?esc(f[1]):'<span class="ng">系統沒有這項資料</span>'}</td><td><span class="tag ${lab[f[2]][1]}">${lab[f[2]][0]}</span></td></tr>`).join('')}
+     ${state.tplCustom.map(c=>`<tr><td>${esc(c)}</td><td><span class="ng">自訂欄位</span></td><td><span class="tag t-hu">社工親填</span></td></tr>`).join('')}
+     </table><p class="muted" style="font-size:12.5px;margin:10px 0 0">對應錯了可以直接改；改過的對應會存進範本，下次轉介同一單位不用再設定。</p>`
+     :`<div class="drop" style="align-items:center;text-align:center;padding:40px"><b>還沒有這個單位的範本</b><span class="muted" style="font-size:14px">按左邊「匯入對方轉介單」，系統會讀出表單上的欄位，並對應到現有資料。</span></div>`}
+    </div></div>
+  </div>`;
+}
+function vWord(){
+  const lab={au:'t-au',ai:'t-ai',hu:'t-hu'};
+  const subj='【轉介】isnt社會福利基金會轉介獨居長者一名（案號 A00-1016）';
+  const body=`示範社區關懷協會 您好：
+
+本會因服務方案調整，轉介一位獨居長者（案號 A00-1016）至貴會，希望提供社區關懷訪視與送餐評估。
+
+轉介單已附在信件附件，檔案已加密，開啟密碼將另以電話告知。
+如方便，請於 7 日內回覆是否收案，或來電與我聯繫。
+
+isnt社會福利基金會　王怡君 社工
+電話：[__]`;
+  return `<div class="head"><div><h1>資料包與追蹤：依對方格式產出，送出後的進度回到這裡</h1><p>依對方範本，用已確認的資料填好轉介單（Word／PDF），附上社工給對方的說明。送出依現行管道與簽核；對方的回覆由社工登錄，AI 整理成進度摘要，社工確認後寫入個案紀錄。</p></div></div>
+  <div class="grid" style="grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)">
+   <div class="card"><h2>Word 預覽 <small>轉介單_A00-1016.docx</small><span class="tag t-mid" style="margin-left:auto">2 欄社工親填</span></h2>
+    <div class="bd" style="background:var(--panel-2)"><div style="background:#FFFFFF;color:#18222F;max-width:640px;margin:0 auto;padding:28px 32px;box-shadow:0 1px 4px rgba(0,0,0,.12);font-size:14px">
+     <div style="text-align:center;font-weight:700;font-size:17px;margin-bottom:4px">示範社區關懷協會　個案轉介單</div>
+     <div style="text-align:center;font-size:12px;color:#6B7480;margin-bottom:14px">轉介日期：115 年 10 月 16 日</div>
+     <table style="width:100%;border-collapse:collapse;font-size:13.5px">${TPL_FIELDS.map(f=>`<tr><td style="border:1px solid #9AA3AE;padding:6px 8px;width:30%;background:#F3F4F2">${f[0]}</td><td style="border:1px solid #9AA3AE;padding:6px 8px;${f[2]==='hu'?'background:#FBF1D6':''}">${esc(f[3])}</td></tr>`).join('')}</table>
+     <div style="font-size:12px;color:#6B7480;margin-top:10px">本轉介單依個案 115/10/14 簽署之知情同意提供，僅限轉介用途。</div>
+    </div>
+    <div class="row" style="margin-top:12px;justify-content:space-between"><span class="muted" style="font-size:12.5px">黃底為社工親填；其餘欄位出處可在系統內追溯</span><button class="btn pri" id="dlWord">產出資料包（Word／PDF，加密）</button></div></div></div>
+   <div class="stack">
+    <div class="card"><h2>社工附言 <small>隨資料包送出</small></h2><div class="bd"><textarea aria-label="社工附言" style="width:100%;min-height:96px;border:1px solid var(--warn-line);border-radius:8px;padding:8px 10px;background:var(--panel)">長者獨居、膝痛，上下樓需扶牆，近月多以泡麵果腹；已同意接受送餐。期待貴會評估社區關懷訪視與送餐，如需確認飲食習慣，請與我聯繫。</textarea></div></div>
+    <div class="card"><h2>追蹤紀錄</h2><div class="bd stack" style="gap:10px;font-size:14px">
+     <div class="tl"><div><i></i><span>送出（傳真，經主管核章）</span><span class="mono muted">10/16</span></div><div><i></i><span>對方電話回覆（社工登錄）</span><span class="mono muted">10/18</span></div><div><i class="w"></i><span class="muted">首次服務確認</span><span class="mono muted">10/30 提醒</span></div></div>
+     <div style="background:var(--panel-2);border-radius:8px;padding:10px 12px"><div class="muted" style="font-size:12.5px">社工登錄的回覆原文</div>「已收案，安排 10/23 開始送餐，想確認長者有沒有飲食禁忌。」</div>
+     <div style="border-left:4px solid var(--ai);padding:4px 0 4px 12px"><div class="row" style="justify-content:space-between"><b style="font-weight:500">進度摘要</b><span class="tag t-ai">AI 整理</span></div>已收案；10/23 開始送餐。待辦：回覆對方飲食禁忌。</div>
+     <div class="row"><button class="btn pri" id="trkOk">${state.trkOk?'✓ 已寫入個案紀錄':'確認寫入個案紀錄'}</button><p id="mailMsg" class="muted" style="font-size:13px;margin:0" role="status">${esc(state.mailCopied)}</p></div></div></div>
+    <div class="card"><h2>資料包的保護</h2><div class="bd check">
+     <div class="ok">✓<span>只含同意範圍內的欄位（未同意的情緒與心理不輸出）</span></div>
+     <div class="ok">✓<span>輸出檔加密；產出、送出與回覆登錄都寫入稽核日誌</span></div>
+     <div class="ok">✓<span>對方如果也使用本工具，資料包可直接匯入對方表單</span></div>
+    </div></div>
+   </div>
+  </div>`;
+}
+function bindReferral(){
+  document.querySelectorAll('[data-rt]').forEach(b=>b.onclick=()=>{state.refTab=b.dataset.rt;state.mailCopied='';render()});
+  if(state.refTab==='content'){bindReferralMain();return}
+  if(state.refTab==='tpl'){
+    $('#tplImport').onclick=()=>{state.tplImported=true;render()};
+    $('#tplAdd').onclick=()=>{state.tplCustom.push(['宗教信仰','飲食禁忌','慣用語言'][state.tplCustom.length%3]);state.tplImported=true;render()};
+    return;
+  }
+  const tk=$('#trkOk'); if(tk) tk.onclick=()=>{state.trkOk=true;render()};
+  $('#dlWord').onclick=()=>{state.mailCopied='示範版不提供下載。正式版會產生加密的 .docx，存到單位指定資料夾。';$('#mailMsg').textContent=state.mailCopied};
+}
+
+/* ---------- 6 export ---------- */
+const VISITS=[
+ ['A00','10/14','親訪','完成訪視','情緒低落；備餐困難','連結送餐；轉介長照評估','3'],
+ ['A01','10/07','親訪','完成訪視','無','持續關懷','4'],
+ ['A03','10/03','送餐＋關懷','完成訪視','無','持續關懷','4'],
+ ['A05','10/08','電訪','完成問安','無','持續問安','2'],
+ ['A07','10/15','電訪','未接通','連續 2 次未接','安排親訪','2'],
+ ['A09','10/09','親訪','完成訪視','無','持續關懷','3'],
+ ['A12','10/05','親訪','完成訪視','居家跌倒','已通報家屬；居家無障礙評估','3']
+];
+const TARGETS={
+ central:{name:'中央獨老關懷服務平台',fmt:'匯入檔 CSV',cols:['個案編號','訪視日期','訪視方式','訪視結果','異常／需求','後續處置'],idx:[0,1,2,3,4,5],
+   map:[['個案編號','個案編號','自動'],['訪視日期','訪視日期','自動'],['訪視方式','訪視方式（代碼 1–3）','轉碼'],['訪視結果','訪視結果','自動'],['異常／需求','異常狀況','定稿內容'],['後續處置','後續處置','定稿內容']]},
+ city:{name:'縣市社政系統（A 市格式）',fmt:'匯入檔 XLSX',cols:['案號','服務日','服務方式','需求等級','處遇摘要'],idx:[0,1,2,6,5],
+   map:[['個案編號','案號（加縣市碼）','轉碼'],['訪視日期','服務日（民國年）','轉碼'],['訪視方式','服務方式','自動'],['需求等級','需求等級','社工判定'],['後續處置','處遇摘要','定稿內容']]},
+ inhouse:{name:'會內個案管理表',fmt:'Excel',cols:['個案編號','最近訪視','方式','需求等級','後續處置'],idx:[0,1,2,6,5],
+   map:[['個案編號','個案編號','自動'],['訪視日期','最近訪視','自動'],['訪視方式','方式','自動'],['需求等級','需求等級','社工判定'],['後續處置','後續處置','定稿內容']]},
+ paste:{name:'中央平台・貼上版',fmt:'平台不收匯入檔時',cols:[],idx:[],map:[]},
+ monthly:{name:'115 年 10 月月報',fmt:'Word＋統計表',cols:[],idx:[],map:[]},
+ open:{name:'開放格式（API）',fmt:'JSON・RESTful API',cols:[],idx:[],map:[]}
+};
+function vExport(){
+  const t=TARGETS[state.target];
+  const tab=k=>`<button class="${state.target===k?'on':''}" data-t="${k}">${TARGETS[k].name}<small>${TARGETS[k].fmt}</small></button>`;
+  const body=state.target==='paste'?pasteView():state.target==='monthly'?monthly():state.target==='open'?openFmt():`
+   <div class="grid" style="grid-template-columns:minmax(0,1.55fr) minmax(0,1fr)">
+    <div class="card"><h2>預覽 <small>${VISITS.length} 筆・10 月</small><span class="tag t-au" style="margin-left:auto">必填檢核 通過 ${VISITS.length}/${VISITS.length}</span></h2>
+     <div class="bd scroll-x"><table class="t"><tr>${t.cols.map(c=>`<th>${c}</th>`).join('')}</tr>
+     ${VISITS.map(v=>`<tr>${t.idx.map(i=>`<td class="${i<2?'mono':''}">${state.target==='city'&&i===0?'A-'+v[0]:state.target==='city'&&i===1?'115/'+v[1]:esc(v[i])}</td>`).join('')}</tr>`).join('')}</table></div></div>
+    <div class="stack">
+     <div class="card"><h2>欄位對照</h2><div class="bd"><div class="map">${t.map.map(m=>`<span>${m[0]}</span><span class="arrow">→</span><span>${m[1]}</span><span class="tag ${m[2]==='定稿內容'?'t-ai':m[2]==='社工判定'?'t-hu':'t-au'}">${m[2]}</span>`).join('')}</div>
+      <p class="muted" style="font-size:12.5px;margin:12px 0 0">對照表依各系統公開欄位建立；平台尚未開放匯入時，先產出對照表與匯入檔草案。</p></div></div>
+     <div class="card"><div class="bd row" style="justify-content:space-between"><span style="font-size:14px">同一批定稿紀錄，<b>0 欄重打</b></span><button class="btn pri" id="copy">複製 CSV</button></div></div>
+    </div>
+   </div>`;
+  return `<div class="head"><div><h1>系統匯入檔與月報：確認一次，各系統的格式一起產出</h1><p>中央平台、縣市社政系統、會內 Excel 各要一份。系統把同一批定稿紀錄轉成對方的欄位與代碼，數字由程式計算，不交給 AI。</p></div></div>
+  <div class="tabs" style="margin-bottom:16px">${Object.keys(TARGETS).map(tab).join('')}</div>${body}<p id="copied" class="ok" style="font-size:13px" role="status"></p>`;
+}
+function openFmt(){
+  const rec={case_id:'A00',visit_date:'2026-10-14',visit_type:'home_visit',findings:[{field:'living',value:ITEMS[0].txt,confidence:'high',source:'transcript#00:01:46',status:'confirmed'}],risk_level:{value:'medium',decided_by:'social_worker'},schema_version:'0.1-draft'};
+  return `<div class="grid g2"><div class="card"><h2>單筆紀錄 JSON <small>依試辦資料字典</small></h2><div class="bd"><pre class="json">${esc(JSON.stringify(rec,null,2))}</pre></div></div>
+   <div class="stack"><div class="card"><h2>API 端點（草案）</h2><div class="bd scroll-x"><table class="t"><tr><th>方法</th><th>路徑</th><th>用途</th></tr>
+   <tr><td class="mono">GET</td><td class="mono">/cases/{id}/records</td><td>讀取已定稿紀錄</td></tr>
+   <tr><td class="mono">GET</td><td class="mono">/exports/{target}</td><td>取得指定系統匯入檔</td></tr>
+   <tr><td class="mono">POST</td><td class="mono">/referrals</td><td>建立轉介資訊包</td></tr>
+   <tr><td class="mono">GET</td><td class="mono">/schema</td><td>資料字典（欄位、型態、值域、代碼）</td></tr></table></div></div>
+   <div class="card"><div class="bd" style="font-size:14px;line-height:1.7">資料字典、表單邏輯、API 規格無償公開，編入「實作技術指南」；本案開發模組以 MIT 或 Apache 授權釋出，第三方廠商可做出相容產品。</div></div></div></div>`;
+}
+function monthly(){
+  const lv={4:0,3:0,2:0,1:0}; VISITS.forEach(v=>lv[v[6]]++);
+  return `<div class="grid g2">
+   <div class="card"><h2>月統計 <span class="tag t-au">程式計算</span></h2><div class="bd">
+    <div class="kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+     ${[['服務人數',VISITS.length],['親訪人次',VISITS.filter(v=>v[2]!=='電訪').length],['電訪人次',VISITS.filter(v=>v[2]==='電訪').length],['異常處理',VISITS.filter(v=>v[4]!=='無').length],['需求等級 4／3／2／1',`${lv[4]}/${lv[3]}/${lv[2]}/${lv[1]}`],['轉介件數',1]].map(k=>`<div class="kpi card"><small>${k[0]}</small><div class="big" style="font-size:24px">${k[1]}</div></div>`).join('')}
+    </div></div></div>
+   <div class="card"><h2>成果報告段落 <span class="tag t-ai">AI 起草</span><small>［ ］內數字來自程式計算</small></h2><div class="bd" style="font-size:14.5px;line-height:1.8">
+    本月（115 年 10 月）共服務獨居長者［${VISITS.length}］人，親訪［${VISITS.filter(v=>v[2]!=='電訪').length}］人次、電話問安［${VISITS.filter(v=>v[2]==='電訪').length}］人次。本月處理異常狀況［${VISITS.filter(v=>v[4]!=='無').length}］件，包括長者居家跌倒後即時聯繫家屬並安排居家無障礙評估，以及發現長者情緒低落後連結送餐服務與長照需要評估。
+    <div style="margin-top:12px;border:1px solid var(--warn-line);background:var(--human-bg);border-radius:8px;padding:10px 12px"><span class="tag t-hu">人工填入</span> 本月特殊事項與督導意見：11 月追蹤 A00 憂鬱量表結果。</div>
+   </div></div></div>`;
+}
+function bindExport(){
+  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{state.target=b.dataset.t;render()});
+  const pp=$('#pPrev'),pn=$('#pNext'); if(pp)pp.onclick=()=>{state.pasteIdx--;render()}; if(pn)pn.onclick=()=>{state.pasteIdx++;render()};
+  document.querySelectorAll('[data-cp]').forEach(b=>b.onclick=()=>{state.pasteCp[state.pasteIdx+'-'+b.dataset.cp]=1;render()});
+  const ca=$('#cpAll'); if(ca)ca.onclick=()=>{for(let i=0;i<6;i++)state.pasteCp[state.pasteIdx+'-'+i]=1;render()};
+  const c=$('#copy'); if(c)c.onclick=()=>{const t=TARGETS[state.target];const csv=[t.cols.join(',')].concat(VISITS.map(v=>t.idx.map(i=>v[i]).join(','))).join('\n');
+    const done=m=>{$('#copied').textContent=m};
+    try{navigator.clipboard.writeText(csv).then(()=>done('已複製 CSV。'),()=>done('瀏覽器不允許複製，請改用正式版的下載功能。'))}catch(e){done('瀏覽器不允許複製，請改用正式版的下載功能。')}};
+}
+
+/* ---------- 7 dashboard ---------- */
+const DASH={
+ all:{kpi:[6,4,38,5,3],m:[5,7,4,6,8,6,3],q:[[ '第 2 季',16],['第 3 季',20],['第 4 季（至今）',3]]},
+ elder:{kpi:[4,3,26,3,2],m:[3,5,3,4,6,4,2],q:[['第 2 季',11],['第 3 季',14],['第 4 季（至今）',2]]},
+ family:{kpi:[2,1,12,2,1],m:[2,2,1,2,2,2,1],q:[['第 2 季',5],['第 3 季',6],['第 4 季（至今）',1]]}
+};
+function vDash(){
+  const d=DASH[state.dashProg];
+  const labels=state.dashMode==='m'?['4 月','5 月','6 月','7 月','8 月','9 月','10 月*']:d.q.map(q=>q[0]);
+  const vals=state.dashMode==='m'?d.m:d.q.map(q=>q[1]);
+  const max=Math.max(...vals), top=Math.ceil(max/ (max>10?5:2))*(max>10?5:2);
+  const W=640,H=250,L=36,B=36,T=16, bw=(W-L-12)/vals.length;
+  const ticks=[0,top/2,top];
+  const y=v=>H-B-(v/top)*(H-B-T);
+  const svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="新收案量長條圖">
+   ${ticks.map(t=>`<line x1="${L}" x2="${W-6}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)" stroke-width="1"/><text x="${L-8}" y="${y(t)+4}" text-anchor="end" font-size="12" fill="var(--fg-3)" font-family="var(--mono)">${t}</text>`).join('')}
+   ${vals.map((v,i)=>{const x=L+i*bw+bw*.22,w=bw*.56,last=state.dashMode==='m'&&i===vals.length-1||state.dashMode==='q'&&i===vals.length-1;
+     return `<rect x="${x}" y="${y(v)}" width="${w}" height="${H-B-y(v)}" rx="3" fill="var(--ai)" opacity="${last?.45:1}"/><text x="${x+w/2}" y="${y(v)-6}" text-anchor="middle" font-size="13" fill="var(--fg)" font-family="var(--mono)">${v}</text><text x="${x+w/2}" y="${H-B+20}" text-anchor="middle" font-size="12.5" fill="var(--fg-2)" font-family="var(--font)">${labels[i]}</text>`}).join('')}
+  </svg>`;
+  const stages=[['新收案',d.kpi[0]],['待開案訪視',d.kpi[1]],['服務中',d.kpi[2]],['轉介中',d.kpi[3]],['本月結案',d.kpi[4]]];
+  const smax=Math.max(...stages.map(s=>s[1]));
+  return `<div class="head"><div><h1>案件分析：案件走到哪、每月每季收了多少</h1><p>資料來自每一次定稿的紀錄，不需要另外統計。可依方案、工作站與期間篩選。</p></div>
+   <div class="row"><select id="prog" aria-label="方案" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--panel)"><option value="all" ${state.dashProg==='all'?'selected':''}>全部方案</option><option value="elder" ${state.dashProg==='elder'?'selected':''}>獨居老人關懷</option><option value="family" ${state.dashProg==='family'?'selected':''}>家庭支持服務</option></select>
+   <div class="seg"><button class="${state.dashMode==='m'?'on':''}" data-m="m">每月</button><button class="${state.dashMode==='q'?'on':''}" data-m="q">每季</button></div></div></div>
+  <div class="card" style="margin-bottom:16px"><h2>案件進度 <small>115/10/17</small></h2><div class="pipe">${stages.map(s=>`<div><small class="muted">${s[0]}</small><b>${s[1]}</b><div class="barh" style="width:${Math.max(6,s[1]/smax*100)}%"></div></div>`).join('')}</div></div>
+  <div class="grid" style="grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)">
+   <div class="card chart"><h2>新收案量 <small>${state.dashMode==='m'?'115 年 4–10 月；10 月至 17 日':'115 年各季；第 4 季至 10/17'}</small></h2><div class="bd">${svg}</div></div>
+   <div class="stack">
+    <div class="card"><h2>需要注意的案件</h2><div class="bd al">
+     <div><span class="sev" style="background:var(--low)"></span><span>開案訪視逾期（超過 14 天）</span><b class="mono">2</b></div>
+     <div><span class="sev" style="background:var(--low)"></span><span>轉介超過 7 天未回覆</span><b class="mono">1</b></div>
+     <div><span class="sev" style="background:var(--mid)"></span><span>電話問安連續 2 次未接</span><b class="mono">3</b></div>
+     <div><span class="sev" style="background:var(--mid)"></span><span>低信心內容待社工判斷</span><b class="mono">2</b></div>
+     <div><span class="sev" style="background:var(--line)"></span><span>結案後新增重要事件</span><b class="mono">1</b></div>
+    </div></div>
+    <div class="card"><h2>報表</h2><div class="bd row"><a class="btn" href="#export" style="text-decoration:none">10 月月報</a><button class="btn">第 3 季成果報告</button><button class="btn">男／女／成人／兒少人次</button></div></div>
+   </div>
+  </div>`;
+}
+function bindDash(){
+  $('#prog').onchange=e=>{state.dashProg=e.target.value;render()};
+  document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{state.dashMode=b.dataset.m;render()});
+}
+
+/* ---------- 8 rules ---------- */
+const ROLES=['分級','主責社工','本單位督導','本單位行政','接收單位','政府社政系統','AI 模型'];
+const PERM=[
+ ['在案狀態與主責單位',['公開層','讀寫','讀','讀','可查詢','僅對照欄位','不送入']],
+ ['基本資料與聯絡方式',['共享層','讀寫','讀・核章','讀寫','依同意・唯讀','僅對照欄位','不送入']],
+ ['健康與行動',['共享層','讀寫','讀・核章','—','依同意・唯讀','僅對照欄位','去識別化後']],
+ ['生活與家庭狀況',['共享層','讀寫','讀・核章','—','依同意・唯讀','僅對照欄位','去識別化後']],
+ ['情緒與心理',['敏感層','讀寫','讀・核章','—','依同意・唯讀','不上傳','去識別化後']],
+ ['經濟與福利身分',['共享層','讀寫','讀・核章','讀寫','依同意・唯讀','僅對照欄位','不送入']],
+ ['訪視錄音與逐字稿',['敏感層','讀','讀','—','不提供','不上傳','去識別化後・不留存']]
+];
+function vRules(){
+  const cls=v=>v==='公開層'?'t-au':v==='共享層'?'t-ai':v==='敏感層'?'t-low':v.startsWith('可查詢')?'t-ai':v.startsWith('讀寫')?'t-au':v.startsWith('讀')?'t-ai':v.startsWith('依同意')||v.startsWith('去識別化')||v.startsWith('僅')?'t-mid':'t-off';
+  return `<div class="head"><div><h1>共享規則與權限：誰能讀、能寫、能留多久</h1><p>規則由試辦單位在共創工作坊與結構化協商中議定、經治理委員會審議，系統照結果執行。以下為 v0.1 草案，方括號為待議定事項。</p></div>
+   <div class="row"><span class="tag t-mid">草案 v0.1・待共識會議議定</span><button class="btn">議定紀錄</button></div></div>
+  <div class="card" style="margin-bottom:16px"><h2>Ⅰ 跨機構資料讀寫權限 <small>RBAC＋ABAC：機構 × 方案 × 個案 × 欄位敏感度；分級為草案，由試辦單位共擬</small></h2><div class="bd scroll-x"><table class="t"><tr><th>資料類別</th>${ROLES.map(r=>`<th>${r}</th>`).join('')}</tr>
+   ${PERM.map(p=>`<tr><td style="white-space:nowrap">${p[0]}</td>${p[1].map(v=>`<td><span class="tag ${cls(v)}">${v}</span></td>`).join('')}</tr>`).join('')}</table></div></div>
+  <div class="grid g3">
+   <div class="card"><h2>Ⅱ 知情同意</h2><div class="bd" style="font-size:14px;line-height:1.75">
+    <div>告知範圍：錄音用途、AI 處理方式（地端處理、去識別化）、可能轉介的單位類型</div>
+    <div>同意方式：依資料類別分項勾選，效期 [待議定]</div>
+    <div>撤回：個案可隨時撤回，已發出的轉介連結同步失效</div></div></div>
+   <div class="card"><h2>Ⅲ 保存年限與刪除</h2><div class="bd scroll-x"><table class="t"><tr><th>資料</th><th>保存</th><th>刪除方式</th></tr>
+    <tr><td>訪視錄音原檔</td><td>[逐字稿定稿後 __ 天]</td><td>自動刪除並留紀錄</td></tr>
+    <tr><td>逐字稿</td><td>[結案後 __ 年]</td><td>督導核准後刪除</td></tr>
+    <tr><td>轉介連結</td><td>14 天</td><td>到期自動失效</td></tr>
+    <tr><td>AI 原稿與差異軌跡</td><td>[依稽核需求]</td><td>與個案紀錄同步</td></tr></table></div></div>
+   <div class="card c3"><h2>Ⅳ 與政府系統的共享邊界</h2><div class="bd" style="font-size:14px;line-height:1.75">
+    <div class="ok">✓ 上傳：欄位對照表內的定稿欄位</div>
+    <div class="ng">✕ 不上傳：錄音、逐字稿、AI 原稿、情緒與心理細節</div>
+    <div class="muted" style="margin-top:6px">以標準格式產出對應檔；試辦結束後，地端裝置資料依主辦單位指示銷毀或歸還。</div></div></div>
+  </div>`;
+}
+function bindRules(){}
+
+/* ---------- 9 audit ---------- */
+function vAudit(){
+  const c=counts();
+  const ev=[
+   ['10/14 15:41','系統','去識別化完成','遮蔽姓名 3 處、院所 1 處、地址 1 處',''],
+   ['10/14 15:42','境內模型','AI 產出 12 筆','原始產出已鎖定保存',''],
+   ...ITEMS.filter(i=>state.review[i.id]).map(i=>['10/14 '+(16+Math.floor(i.id/7))+':'+String(10+i.id*3).padStart(2,'0'),'王怡君',state.review[i.id]==='ok'?'確認':'修改',i.txt,state.review[i.id]==='edit'?state.edits[i.id]:'']),
+   ...(state.finalized?[['10/14 16:20','王怡君','定稿','風險判定、需求等級、評估意見由社工填寫','']]:[]),
+   ...(state.sent?[['10/16 09:12','王怡君','送出轉介','傳送 7 欄；依同意排除「情緒與心理」','']]:[])
+  ];
+  return `<div class="head"><div><h1>差異軌跡稽核：AI 寫了什麼、社工改了什麼</h1><p>AI 原始產出與社工最終確認內容逐欄留存於僅附加（append-only）、不可竄改的稽核日誌。任何 AI 產出都要經社工確認才會記錄，系統不會自行發布服務決策。</p></div><button class="btn">匯出稽核紀錄（CSV／JSON）</button></div>
+  <div class="kpis" style="margin-bottom:16px">
+   ${[['AI 產出',ITEMS.length,'筆'],['社工確認',c.ok,'筆'],['社工修改',c.ed,'筆'],['待審閱',c.pending,'筆'],['無出處內容',0,'件，送治理委員會檢視']].map(k=>`<div class="card kpi"><small>${k[0]}</small><div class="big">${k[1]}</div><div class="d">${k[2]}</div></div>`).join('')}
+  </div>
+  <div class="card"><h2>林阿桃・開案訪視紀錄 10/14 <small>依時間排序</small></h2><div class="bd scroll-x"><table class="t"><tr><th>時間</th><th>操作者</th><th>動作</th><th>AI 原始產出／內容</th><th>社工定稿</th></tr>
+   ${ev.map(e=>`<tr><td class="mono" style="white-space:nowrap">${e[0]}</td><td style="white-space:nowrap">${e[1]}</td><td style="white-space:nowrap">${e[2]==='修改'?'<span class="tag t-hu">修改</span>':e[2]==='確認'?'<span class="tag t-ai">確認</span>':esc(e[2])}</td><td${e[4]?' style="text-decoration:line-through;color:var(--fg-3)"':''}>${esc(e[3])}</td><td>${esc(e[4])}</td></tr>`).join('')}
+  </table></div></div>`;
+}
+function bindAudit(){}
+
+/* ---------- 10 measure ---------- */
+function vMeasure(){
+  const rows=[['生活關懷表',38,11],['月報與成果報告',240,70],['轉介資訊包',45,12],['處遇執行摘要',90,30]];
+  const mx=240;
+  return `<div class="head"><div><h1>基線量測：前測與後測，工具自動計時</h1><p>前測為現行「人工多系統登打模式」，後測為「Write Once＋AI 輔助模式」處理同類型個案。量測方式於應用驗證前送治理委員會與主辦單位審核。</p></div><span class="tag t-low">數字為示意，正式數據來自應用驗證期</span></div>
+  <div class="grid g2">
+   <div class="card"><h2>每份文件作業時間 <small>分鐘</small></h2><div class="bd stack" style="gap:14px">
+    ${rows.map(r=>`<div><div class="row" style="justify-content:space-between;font-size:14px"><span>${r[0]}</span><span class="mono">${r[1]} → ${r[2]}（−${Math.round((1-r[2]/r[1])*100)}%）</span></div>
+     <div style="display:flex;flex-direction:column;gap:3px;margin-top:5px"><div style="height:10px;border-radius:3px;background:var(--low);opacity:.8;width:${r[1]/mx*100}%"></div><div style="height:10px;border-radius:3px;background:var(--ai);width:${r[2]/mx*100}%"></div></div></div>`).join('')}
+    <div class="legend"><span><span class="dot" style="background:var(--low)"></span>前測：人工多系統登打</span><span><span class="dot" style="background:var(--ai)"></span>後測：AI 輔助</span></div>
+   </div></div>
+   <div class="card"><h2>量測設計 <small>草案</small></h2><div class="bd scroll-x"><table class="t">
+    <tr><td style="white-space:nowrap">前測</td><td>導入前連續 2 週（場域盤點階段）</td></tr>
+    <tr><td style="white-space:nowrap">後測</td><td>導入後 1 個月起連續 2 週（應用驗證階段）</td></tr>
+    <tr><td style="white-space:nowrap">採樣</td><td>三家試辦單位專責社工，依案量結構與方案類別取樣</td></tr>
+    <tr><td style="white-space:nowrap">核心指標</td><td>行政減量（前後測工時）、社工滿意度（5 分量表）、持續使用意願、擴散應用意願</td></tr>
+    <tr><td style="white-space:nowrap">計時方式</td><td>工具記錄開啟到定稿的時間，社工可標註中斷</td></tr>
+    <tr><td style="white-space:nowrap">分析</td><td>前後測對照，輔以訪談與焦點團體；細節經治理委員會審議</td></tr></table></div></div>
+  </div>`;
+}
+function bindMeasure(){}
+
+/* ---------- 示範案例二：兒少與家庭（依單位 A、B、C 提案情境合成） ---------- */
+state.kRead=false; state.kRefTab='eci'; state.kCell='據點課後陪伴|2'; state.kFix={}; state.kEvt=false; state.kPeriod='h1';
+const K_FILES=[['PDF','#B5481F','社福中心派案單_1015.pdf','掃描檔・文字辨識','2 頁'],['XLS','#2D7A4E','脆弱家庭系統匯出_陳家.xlsx','政府系統匯出','服務紀錄 41 筆'],['XLS','#2D7A4E','114 年度 6 歲以下關懷訪視清冊.xlsx','Excel','比對 48 列'],['XLS','#2D7A4E','兒少據點出席紀錄_115.xlsx','Excel','46 次出席']];
+const K_MEM=[
+ ['陳淑芬','母・36・主要照顧者','P0231-01','家庭支持（主案）、親職團體'],
+ ['小宇','子・9','P0231-02','兒少據點課後陪伴'],
+ ['小晴','女・5','P0231-03','114 年關懷訪視（已結案）'],
+ ['父','38・分居','P0231-04','未服務，只出現在家系圖'],
+ ['外婆 林秀英','69・住附近・獨居','P0418-01','獨老關懷（另一家戶，見跨方案連結）']
+];
+const K_DRAFT=[
+ ['家庭組成','母親陳淑芬（36）與長子小宇（9）、次女小晴（5）同住；父母 112 年分居。','hi','派案單 p.1；系統匯出 112/06'],
+ ['經濟狀況','中低收入戶（效期至 116/06）；母親兼職，114/02 曾失業三個月並申請急難救助。','hi','系統匯出 114/02/18'],
+ ['兒少照顧與發展','小宇上課坐不住、作業常未完成；尚未就醫評估。','mid','據點紀錄 115/05/20（老師觀察，非診斷）'],
+ ['過往服務','小晴 113 年接受本會 6 歲以下關懷訪視；小宇 115/03 起參加本會兒少據點。','hi','關懷訪視清冊；據點出席紀錄'],
+ ['照顧支持','外婆住附近，平日協助接送。','mid','據點紀錄 115/04/02（接送人簽名）'],
+ ['安全評估','—','hu','社工訪視後親自評估，系統不產生']
+];
+function vKIntake(){
+  return `<div class="head"><div><h1>派案與初篩：舊資料先整理好，社工直接去訪視</h1><p>社福中心派案後，派案單、脆弱家庭系統匯出檔、前一年度清冊和據點紀錄一起進來。系統比對本會過往服務，整理出初篩訪視報告草稿；保護性通報資料不進 AI。</p></div>
+   <div class="row"><span class="tag t-ai">地端處理・資料不出組織</span><span class="tag t-au">依單位 B、C 提案情境合成</span></div></div>
+  <div class="grid g3">
+   <div class="stack">
+    <div class="card"><h2>收到的資料</h2><div class="bd" style="display:flex;flex-direction:column;gap:8px">${K_FILES.map(f=>`<div class="file"><div class="ic" style="background:${f[1]}">${f[0]}</div><div style="flex:1;min-width:0">${f[2]}<div class="muted" style="font-size:12.5px">${f[3]}・${f[4]}</div></div><span class="st ok">✓</span></div>`).join('')}</div></div>
+    <div class="card"><h2>🔒 保護性通報 <span class="tag t-off" style="text-decoration:none">不送 AI</span></h2><div class="bd" style="font-size:14px;display:flex;flex-direction:column;gap:8px">
+     <div>系統匯出檔內有 <b>家暴通報 1 筆（112）</b>、<b>兒少保護通報 1 筆（113）</b>。</div>
+     <div class="muted" style="font-size:13px">這兩筆不進 AI、不進摘要、不進轉介，只提醒社工「有紀錄」，請到原系統閱讀。</div>
+     <div class="row"><button class="btn sm ${state.kRead?'':'pri'}" id="kRead">${state.kRead?'✓ 已於原系統閱讀（已記入稽核）':'我已於原系統閱讀'}</button></div></div></div>
+   </div>
+   <div class="stack">
+    <div class="card"><h2>比對本會過往服務 <span class="tag t-ai">自動比對</span></h2><div class="bd" style="display:flex;flex-direction:column;gap:10px">
+     <div class="alert"><span>⟲</span><div><b>小晴曾受本會服務</b>列於 114 年度 6 歲以下關懷訪視清冊（第 12 列），原主責：李社工。建議優先派回原主責社工。</div></div>
+     <div class="alert" style="background:var(--ai-bg);border-color:var(--ai)"><span>⟲</span><div><b>小宇在本會兒少據點</b>115/03 起參加課後陪伴，出席 46 次；據點老師的觀察紀錄 3 則一併帶入。</div></div>
+     <div class="muted" style="font-size:13px">比對依姓名＋出生日期在地端執行，不需人工逐年翻清冊。</div></div></div>
+    <div class="card"><h2>家庭編號 <span class="mono">F115-0231</span><small>對應脆家系統案號</small></h2><div class="bd scroll-x">
+     <table class="t"><tr><th>成員</th><th>個人編號</th><th>本會服務</th></tr>
+     ${K_MEM.map(m=>`<tr><td style="white-space:nowrap">${m[0]}<br><span class="muted" style="font-size:12.5px">${m[1]}</span></td><td class="mono" style="white-space:nowrap">${m[2]}</td><td style="font-size:13.5px">${m[3]}</td></tr>`).join('')}</table>
+     <div class="muted" style="font-size:12.5px;margin-top:8px">紀錄掛在個人；家庭層可看全家歷程。主責：李社工（原主責），初訪 115/10/22。</div></div></div>
+   </div>
+   <div class="card c3"><h2>初篩訪視報告 <span class="tag t-ai">AI 草稿</span><small>每段附出處</small></h2><div class="bd" style="display:flex;flex-direction:column;gap:10px">
+    ${K_DRAFT.map(d=>`<div style="border-left:4px solid ${d[2]==='hu'?'var(--human)':d[2]==='hi'?'var(--hi)':'var(--mid)'};padding:4px 0 4px 12px"><div class="row" style="justify-content:space-between"><b style="font-weight:500">${d[0]}</b>${d[2]==='hu'?'<span class="tag t-hu">社工親填</span>':`<span class="tag ${CONF[d[2]][1]}">${CONF[d[2]][0]}</span>`}</div><div style="font-size:14px">${esc(d[1])}</div><div class="muted" style="font-size:12px">出處：${d[3]}</div></div>`).join('')}
+    <a class="btn pri" href="#chen:geno" style="text-decoration:none;text-align:center">下一步：家系圖與服務紀錄 →</a></div></div>
+  </div>`;
+}
+function bindKIntake(){ $('#kRead').onclick=()=>{state.kRead=!state.kRead;render()}; }
+
+const K_PEOPLE={
+  gf:['外公','已歿','匯出檔 112/06','hi'], gm:['外婆 69','獨居・P0418-01','據點紀錄 115/04/02','mid'],
+  fa:['父 38','分居・P0231-04','派案單 p.1','mid'], mo:['陳淑芬 36','主要照顧者・P0231-01','派案單 p.1','hi'],
+  son:['小宇 9','國小三年級・P0231-02','據點出席紀錄','hi'], dau:['小晴 5','幼兒園・P0231-03','關懷訪視清冊','hi']
+};
+const K_TL=[
+ ['112/06','父母分居，母攜二子遷居北區','社福中心','hi','派案單 p.1','全家'],
+ ['113/09','小晴接受 6 歲以下關懷訪視','本會關懷訪視','hi','關懷訪視清冊','P0231-03'],
+ ['114/02','母親失業三個月，申請急難救助','社福中心','hi','系統匯出 114/02/18','P0231-01'],
+ ['115/03','小宇加入兒少據點課後陪伴','本會據點','hi','據點出席紀錄','P0231-02'],
+ ['115/05','老師觀察小宇上課坐不住、作業常未完成','本會據點','mid','據點紀錄 115/05/20','P0231-02'],
+ ['115/08','母親參加親職團體 2 次','本會團體','hi','團體簽到表（自動回填）','P0231-01'],
+ ['115/10','社福中心派案：家庭支持服務','社福中心','hi','派案單 p.1','全家']
+];
+function vKStory(){
+  const S='stroke="var(--fg)" stroke-width="3"', F='fill="var(--panel)"';
+  const TAG={gf:'',gm:'獨老・實物給付',fa:'',mo:'家支・親職團體',son:'兒少據點',dau:'關懷訪視（結案）'};
+  const lab=(x,y,k,anchor='start')=>`<text class="gtext" x="${x}" y="${y}" text-anchor="${anchor}" font-size="17" font-weight="${k===state.kSel?700:400}">${K_PEOPLE[k][0]}</text><text class="gsub" x="${x}" y="${y+21}" text-anchor="${anchor}" font-size="13">${K_PEOPLE[k][1]}</text>${TAG[k]?`<text x="${x}" y="${y+40}" text-anchor="${anchor}" font-size="13" fill="var(--auto)" style="font-family:var(--font);font-weight:500">● ${TAG[k]}</text>`:''}`;
+  const node=(k,shape)=>`<g class="node ${state.kSel===k?'sel':''}" data-kp="${k}" tabindex="0" role="button" aria-label="${K_PS[k].name}">${shape}</g>`;
+  const id=K_PS[state.kSel].id;
+  let tl=[...K_TL,['115/10','外婆跌倒，需休養兩週（跨方案重大事件提醒）','獨老方案','hi','跨方案提醒 10/25','P0418-01']];
+  if(state.kEvt) tl.push(['116/03','結案後：母親來電，小宇確診 ADHD，詢問特教資源','結案後事件','hu','社工電話紀錄','P0231-02']);
+  const ftl=tl.filter(t=>t[5]==='全家'||t[5]===id);
+  return `<div class="head"><div><h1>家系圖與服務紀錄：點家人，就看到他在本會的服務</h1><p>家系圖和案家大事記來自同一份資料。綠色標記代表這個人正在本會某個方案接受服務；點選成員，右側顯示他的服務紀錄，大事記也只列和他有關的事件。</p></div>
+   <div class="row"><button class="btn" id="kEvt">${state.kEvt?'✓ 已記一筆結案後事件':'＋ 記一筆結案後重要事件'}</button></div></div>
+  <div class="grid" style="grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)">
+   <div class="stack">
+   <div class="card geno"><h2>家系圖 <span class="tag t-ai">AI 草稿</span><small>點選成員看服務紀錄</small></h2><div class="bd">
+    <svg viewBox="0 0 760 490" role="img" aria-label="陳家家系圖">
+     <rect x="250" y="176" width="480" height="300" rx="14" fill="none" stroke="var(--fg-3)" stroke-width="2" stroke-dasharray="8 6"/><text class="gsub" x="720" y="196" text-anchor="end" font-size="13">家戶 F115-0231</text>
+     <rect x="470" y="10" width="270" height="140" rx="14" fill="none" stroke="var(--auto)" stroke-width="2" stroke-dasharray="8 6"/><text class="gsub" x="730" y="30" text-anchor="end" font-size="13">家戶 F115-0418</text>
+     <polyline points="338,106 338,130 520,130 520,106" fill="none" ${S}/>
+     <line x1="429" y1="130" x2="429" y2="190" ${S}/>
+     <polyline points="140,268 140,300 429,300 429,268" fill="none" stroke="var(--fg)" stroke-width="3"/>
+     <line x1="196" y1="312" x2="212" y2="288" ${S}/><line x1="206" y1="312" x2="222" y2="288" ${S}/>
+     <line x1="300" y1="300" x2="300" y2="340" ${S}/>
+     <line x1="300" y1="340" x2="570" y2="340" ${S}/>
+     <line x1="300" y1="340" x2="300" y2="362" ${S}/><line x1="570" y1="340" x2="570" y2="364" ${S}/>
+     ${node('gf',`<rect class="shape" x="300" y="30" width="76" height="76" ${F} ${S}/><line x1="302" y1="32" x2="374" y2="104" ${S}/><line x1="374" y1="32" x2="302" y2="104" ${S}/>`)}
+     ${node('gm',`<circle class="shape" cx="520" cy="68" r="38" ${F} ${S}/>`)}
+     ${node('fa',`<rect class="shape" x="102" y="192" width="76" height="76" ${F} stroke="var(--fg)" stroke-width="3" stroke-dasharray="6 5"/>`)}
+     ${node('mo',`<circle class="shape" cx="429" cy="229" r="38" fill="var(--panel)" ${S}/>`)}
+     ${node('son',`<rect x="262" y="362" width="76" height="76" fill="none" stroke="var(--ai)" stroke-width="3"/><rect class="shape" x="270" y="370" width="60" height="60" fill="var(--ai-bg)" stroke="var(--ai)" stroke-width="3"/>`)}
+     ${node('dau',`<circle class="shape" cx="570" cy="400" r="36" ${F} ${S}/>`)}
+     ${lab(290,60,'gf','end')}${lab(570,58,'gm')}${lab(92,226,'fa','end')}${lab(478,220,'mo')}${lab(350,392,'son')}${lab(616,396,'dau')}
+     <text class="gsub" x="160" y="330" font-size="13">分居</text>
+    </svg>
+    <div class="legend" style="margin-top:6px"><span>□ 男</span><span>○ 女</span><span style="color:var(--ai)">◎ 主要服務兒少</span><span>╳ 歿</span><span>// 分居</span><span>┅ 框：家戶</span><span style="color:var(--auto)">● 本會服務中</span></div>
+   </div></div>
+   <div class="card"><h2>案家大事記 <small>${state.kSel==='mo'?'全家＋陳淑芬':'全家＋'+K_PS[state.kSel].name}・${ftl.length} 筆</small></h2><div class="bd">
+    <div class="tl">${ftl.map(t=>`<div><i style="background:${t[3]==='hu'?'var(--human)':'var(--auto)'}"></i><span><b class="mono" style="font-weight:500">${t[0]}</b> <span class="tag" style="background:var(--panel-2);color:var(--fg-2)">${t[5]}</span>　${esc(t[1])}<br><span class="muted" style="font-size:12.5px">${t[2]}・出處：${t[4]}</span></span><span></span></div>`).join('')}</div>
+   </div></div>
+   </div>
+   <div class="stack">
+    ${personCard(K_PS[state.kSel])}
+    <div class="row" style="justify-content:flex-end"><a class="btn pri" href="#chen:referral" style="text-decoration:none">下一步：轉介早療與學校 →</a></div>
+   </div>
+  </div>`;
+}
+function bindKStory(){
+  $('#kEvt').onclick=()=>{state.kEvt=!state.kEvt;render()};
+  document.querySelectorAll('[data-kp]').forEach(g=>{g.onclick=()=>{state.kSel=g.dataset.kp;render()};g.onkeydown=ev=>{if(ev.key==='Enter'){state.kSel=g.dataset.kp;render()}}});
+}
+
+const K_REF={
+ eci:{name:'早療通報轉介中心',form:'發展遲緩兒童通報轉介表（對方範本・匯入 Word）',f:[
+  ['兒童姓名／出生日期','小宇，107/04（9 歲）・P0231-02','au','基本資料・個人編號'],
+  ['主要照顧者','母親，陳淑芬','au','基本資料・家系圖'],
+  ['聯絡電話','09••-•••-•••（送出時加密）','au','基本資料'],
+  ['發展疑慮描述','上課坐不住、作業常未完成；據點老師觀察 3 則','ai','據點紀錄 115/05/20 等'],
+  ['就醫／評估紀錄','尚未就醫評估','ai','初訪紀錄 10/22'],
+  ['家庭狀況','單親，母兼職；外婆協助接送','ai','案家大事記'],
+  ['轉介原因與期待','','hu',''],
+  ['保護性通報紀錄','不傳送（未在同意範圍，且不經 AI）','off','—']]},
+ sch:{name:'國小輔導室',form:'學生轉介輔導單（對方範本・自訂欄位）',f:[
+  ['學生姓名／年級','小宇，國小三年級・P0231-02','au','基本資料・個人編號'],
+  ['家長／監護人','母親，陳淑芬','au','基本資料'],
+  ['家庭狀況（摘要）','單親，母兼職；外婆協助接送','ai','案家大事記・共享層'],
+  ['課後觀察','據點課後陪伴出席穩定（46 次）；專注時間短','ai','據點出席與觀察紀錄'],
+  ['經濟狀況','只傳「具中低收入資格」，不傳收入細節','au','福利身分・最少必要'],
+  ['需學校協助事項','','hu',''],
+  ['兒少表意','','hu',''],
+  ['保護性通報紀錄','不傳送','off','—']]}
+};
+function vKRef(){
+  const u=K_REF[state.kRefTab];
+  return `<div class="head"><div><h1>轉介早療與學校：同一份資料，套不同單位的表單</h1><p>兒少常同時需要早療評估和學校協助。兩張轉介單欄位不同，系統從已確認的資料各自填好；專業判斷和孩子自己的意見，留給社工親填。</p></div>
+   <div class="seg"><button class="${state.kRefTab==='eci'?'on':''}" data-kr="eci">早療通報轉介中心</button><button class="${state.kRefTab==='sch'?'on':''}" data-kr="sch">國小輔導室</button></div></div>
+  <div class="grid" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)">
+   <div class="card"><h2>${u.name} <small>${u.form}</small></h2><div>
+    ${u.f.map(r=>`<div class="fld ${r[2]}"><div class="k">${r[0]}${r[3]?`<small>${r[3]}</small>`:''}</div><div class="v">${r[2]==='hu'?`<textarea placeholder="${r[0]==='兒少表意'?'記錄孩子自己的想法（例如：他希望上課時……）':'由社工撰寫'}"></textarea>`:esc(r[1])}</div><div>${r[2]==='au'?'<span class="tag t-au">自動帶入</span>':r[2]==='ai'?'<span class="tag t-ai">AI 填入</span>':r[2]==='hu'?'<span class="tag t-hu">社工親填</span>':'<span class="tag t-off">不傳送</span>'}</div></div>`).join('')}
+   </div></div>
+   <div class="stack">
+    <div class="card"><h2>同意與範圍</h2><div class="bd check">
+     <div><span class="ok">✓</span>母親同意轉介${state.kRefTab==='eci'?'早療評估':'學校輔導'}（115/10/22 簽署）</div>
+     <div><span class="ok">✓</span>已向小宇說明，並記錄他的意見</div>
+     <div><span class="ok">✓</span>只傳這張表單需要的欄位</div>
+     <div><span class="ng">✕</span>保護性通報：任何轉介都不傳</div></div></div>
+    <div class="card"><h2>送出方式</h2><div class="bd" style="font-size:14px;display:flex;flex-direction:column;gap:8px">
+     <div>產出資料包 → 主管核章 → 依現行管道送出（公文、傳真或方案平台）</div><div>對方的回覆由社工登錄，AI 整理成進度摘要，社工確認後寫入紀錄</div>
+     <div class="row" style="margin-top:4px"><a class="btn" href="#lin:referral" style="text-decoration:none">看資料包與追蹤範例</a><a class="btn pri" href="#chen:history" style="text-decoration:none">下一步：服務歷程 →</a></div></div></div>
+   </div>
+  </div>`;
+}
+function bindKRef(){ document.querySelectorAll('[data-kr]').forEach(b=>b.onclick=()=>{state.kRefTab=b.dataset.kr;render()}); }
+
+const K_COLS=['男成人','女成人','男童','女童'];
+const K_ROWS=[
+ ['家庭訪視','家支 Word 紀錄',[6,18,9,8]],
+ ['電話關懷','家支 Word 紀錄',[4,31,0,0]],
+ ['據點課後陪伴','據點出席 Excel',[0,0,212,186]],
+ ['親職團體','團體簽到表',[2,27,0,0]],
+ ['兒童團體','團體簽到表',[0,0,38,41]],
+ ['資源轉介','轉介紀錄',[1,7,3,2]]
+];
+const K_FLAGS=[['據點出席 115/04/12','新生「阿哲」無出生日期，無法判斷兒少或成人'],['團體簽到 115/05/03','簽名難以辨識，無法對應個案'],['行事曆 115/06/18','「家訪」未註明對象人數']];
+function vKStats(){
+  const sum=a=>a.reduce((x,y)=>x+y,0);
+  const rows=K_ROWS.map(r=>[r[0],r[1],state.kPeriod==='q3'?r[2].map(v=>Math.round(v*0.52)):r[2]]);
+  const colT=K_COLS.map((_,i)=>sum(rows.map(r=>r[2][i])));
+  const [rn,ci]=state.kCell.split('|'); const row=rows.find(r=>r[0]===rn); const val=row[2][+ci];
+  const left=K_FLAGS.filter((_,i)=>!state.kFix[i]).length;
+  return `<div class="head"><div><h1>成果統計：男／女／成人／兒少人次自動歸類</h1><p>家支紀錄、據點出席、團體簽到、行事曆的資料依「統計字典」自動歸類。每個數字都能點開看是哪幾筆紀錄算出來的；資料修正後重新計算，不用人工重算。</p></div>
+   <div class="row"><div class="seg"><button class="${state.kPeriod==='h1'?'on':''}" data-kp="h1">115 上半年</button><button class="${state.kPeriod==='q3'?'on':''}" data-kp="q3">115 第 3 季</button></div><button class="btn">匯出成果報告（Excel）</button></div></div>
+  <div class="kpis" style="margin-bottom:16px">
+   <div class="card kpi"><small>服務人次</small><div class="big">${sum(colT)}</div><div class="d">${state.kPeriod==='q3'?'服務家庭 31 戶・個人 74 人':'服務家庭 38 戶・個人 96 人'}</div></div>
+   ${K_COLS.map((c,i)=>`<div class="card kpi"><small>${c}</small><div class="big">${colT[i]}</div><div class="d">${i<2?'18 歲以上':'未滿 18 歲'}</div></div>`).join('')}
+  </div>
+  <div class="grid" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)">
+   <div class="card"><h2>人次統計表 <small>點數字看出處</small></h2><div class="bd scroll-x"><table class="t">
+    <tr><th>服務類型</th><th>資料來源</th>${K_COLS.map(c=>`<th style="text-align:right">${c}</th>`).join('')}<th style="text-align:right">合計</th></tr>
+    ${rows.map(r=>`<tr><td>${r[0]}</td><td class="muted" style="font-size:13px">${r[1]}</td>${r[2].map((v,i)=>`<td style="text-align:right"><button class="src" data-kc="${r[0]}|${i}" style="${state.kCell===r[0]+'|'+i?'font-weight:700':''}">${v}</button></td>`).join('')}<td style="text-align:right" class="mono">${sum(r[2])}</td></tr>`).join('')}
+    <tr><td><b style="font-weight:500">合計</b></td><td></td>${colT.map(v=>`<td style="text-align:right" class="mono"><b style="font-weight:500">${v}</b></td>`).join('')}<td style="text-align:right" class="mono"><b>${sum(colT)}</b></td></tr>
+   </table></div></div>
+   <div class="stack">
+    <div class="card"><h2>這個數字怎麼來 <small>${rn}・${K_COLS[ci]}</small></h2><div class="bd" style="font-size:14px;display:flex;flex-direction:column;gap:6px">
+     <div class="big">${val}</div>
+     <div>來源：${row[1]}，${val} 筆符合「${K_COLS[ci]}」</div>
+     <div class="muted" style="font-size:13px">同一人同日同服務已合併 ${Math.max(0,Math.round(val*0.02))} 筆；年齡以服務當日計算</div>
+     <div class="row"><button class="btn sm">列出 ${val} 筆紀錄</button></div></div></div>
+    <div class="card"><h2>統計字典 <span class="tag t-mid">草案・待單位共擬</span></h2><div class="bd" style="font-size:14px;display:flex;flex-direction:column;gap:6px">
+     <div>人次與人數：以個人編號計；戶數：以家庭編號計</div><div>兒少：服務當日未滿 18 歲</div><div>1 人次：同一個人編號、同一天、同一項服務</div><div>團體：每位出席者各算 1 人次</div><div>性別：依基本資料，不由 AI 推論</div></div></div>
+    <div class="card"><h2>無法歸類 <span class="tag ${left?'t-mid':'t-hi'}">${left?`${left} 筆待補`:'已補齊'}</span></h2><div class="bd" style="font-size:14px;display:flex;flex-direction:column;gap:8px">
+     ${K_FLAGS.map((f,i)=>`<div class="row" style="justify-content:space-between;flex-wrap:nowrap"><span><span class="muted" style="font-size:12.5px">${f[0]}</span><br>${f[1]}</span>${state.kFix[i]?'<span class="ok" style="font-size:13px;white-space:nowrap">✓ 已補</span>':`<button class="btn sm" data-kf="${i}">補資料</button>`}</div>`).join('')}
+     <div class="muted" style="font-size:12.5px">不會猜：資料不足就列出來請人補，避免場次漏算或分類不一致。</div></div></div>
+   </div>
+  </div>`;
+}
+function bindKStats(){
+  document.querySelectorAll('[data-kc]').forEach(b=>b.onclick=()=>{state.kCell=b.dataset.kc;render()});
+  document.querySelectorAll('[data-kf]').forEach(b=>b.onclick=()=>{state.kFix[b.dataset.kf]=1;render()});
+  document.querySelectorAll('[data-kp]').forEach(b=>b.onclick=()=>{state.kPeriod=b.dataset.kp;render()});
+}
+
+state.kLinked=false; state.kView='li';
+const K_MATCH=[['姓名','林秀英（派案單「緊急聯絡人」欄）','林秀英（獨老名冊）',true],['出生日期','46/03/12（脆家系統匯出）','46/03/12',true],['電話','同一支手機號碼','同一支手機號碼',true],['地址','北區光明里（相鄰巷弄）','北區光明里',false]];
+const K_SEE={
+ li:{who:'李社工（家庭支持・陳家主責）',about:'林秀英（獨老方案）',rows:[
+  ['有關聯，以及對方主責是誰','可看','ok','預設'],['對方主責社工聯絡方式','可看','ok','預設'],
+  ['重大事件提醒（跌倒、住院、搬家）','可看','ok','林秀英同意分享此類'],
+  ['獨老訪視紀錄內容','不可看','ng','需本人同意＋業務需要'],['健康與用藥細節','不可看','ng','敏感層']]},
+ zh:{who:'張社工（獨老關懷・林秀英主責）',about:'陳家 F115-0231（家庭支持）',rows:[
+  ['有關聯，以及對方主責是誰','可看','ok','預設'],['對方主責社工聯絡方式','可看','ok','預設'],
+  ['照顧安排（外婆協助接送）','可看','ok','陳淑芬同意分享此類'],
+  ['兒少服務紀錄與據點觀察','不可看','ng','需本人／法定代理人同意'],['保護性通報','永不跨方案','ng','任何情況']]}
+};
+function vKLink(){
+  const L=state.kLinked, v=K_SEE[state.kView];
+  const hh=(x,y,w,title,sub,mem,prog,color)=>`<rect x="${x}" y="${y}" width="${w}" height="210" rx="14" fill="var(--panel-2)" stroke="${color}" stroke-width="2.5" ${L?'':'stroke-dasharray="8 6"'}/>
+   <text class="gtext" x="${x+18}" y="${y+32}" font-size="17" font-weight="700">${title}</text><text class="gsub" x="${x+18}" y="${y+54}" font-size="13">${sub}</text>
+   ${mem.map((m,i)=>`<text class="gtext" x="${x+18}" y="${y+88+i*28}" font-size="15">${m[0]}</text><text class="gsub" x="${x+150}" y="${y+88+i*28}" font-size="13" style="font-family:var(--mono)">${m[1]}</text>`).join('')}
+   <text x="${x+18}" y="${y+196}" font-size="13" fill="${color}" style="font-family:var(--font)">${prog}</text>`;
+  return `<div class="head"><div><h1>跨方案連結：同一家人，兒少與獨老分開服務、互相知道</h1><p>一個人只有一個個人編號；住在一起的算一個家戶，不同家戶用親屬關係連起來。系統只提示「可能是同一人」，由社工確認才連結；連結後，各方案預設只看得到「有關聯」。</p></div>
+   <div class="row"><span class="tag t-ai">地端比對・身分證雜湊</span></div></div>
+  <div class="grid" style="grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)">
+   <div class="stack">
+    <div class="card"><h2>可能是同一人 ${L?'<span class="tag t-hi">已確認連結</span>':'<span class="tag t-mid">等你確認</span>'}<small>陳家「外婆」× 獨老方案「林秀英」</small></h2><div class="bd scroll-x">
+     <table class="t"><tr><th>比對項目</th><th>兒少端（陳家）</th><th>獨老端</th><th></th></tr>
+     ${K_MATCH.map(m=>`<tr><td style="white-space:nowrap">${m[0]}</td><td>${m[1]}</td><td>${m[2]}</td><td>${m[3]?'<span class="ok">相符</span>':'<span class="muted">部分相符</span>'}</td></tr>`).join('')}</table>
+     <div class="row" style="margin-top:12px">${L?`<span class="ok" style="font-size:14px">✓ 李社工 10/23 確認為同一人（已記入稽核）</span><button class="btn sm" id="kUnlink">取消連結</button>`:`<button class="btn pri" id="kLink">確認是同一人，建立連結</button><button class="btn">不是同一人</button>`}</div></div></div>
+    <div class="card geno"><h2>家戶與關係 <small>兩個家戶不合併，用關係連起來</small></h2><div class="bd" style="${L?'':'opacity:.5'}">
+     <svg viewBox="0 0 760 270" role="img" aria-label="兩個家戶的連結">
+      ${hh(10,20,330,'家戶 F115-0231 陳家','脆家系統案號 115-北-0231',[['陳淑芬（母）','P0231-01'],['小宇','P0231-02'],['小晴','P0231-03']],'家庭支持・兒少據點｜主責 李社工','var(--ai)')}
+      ${hh(420,20,330,'家戶 F115-0418 獨居','獨老系統案號 115-獨-0418',[['林秀英 69','P0418-01']],'獨老關懷｜主責 張社工','var(--auto)')}
+      <line x1="340" y1="102" x2="420" y2="102" stroke="var(--human)" stroke-width="3" ${L?'':'stroke-dasharray="6 5"'}/>
+      <text x="380" y="92" text-anchor="middle" font-size="14" fill="var(--human)" style="font-family:var(--font)">母女</text>
+     </svg>
+     <div class="muted" style="font-size:12.5px">兩個政府系統的案號分別記在各自家戶下，匯出時各用各的格式。</div></div></div>
+   </div>
+   <div class="stack">
+    <div class="card"><h2>誰看得到什麼 <div class="seg" style="margin-left:auto"><button class="${state.kView==='li'?'on':''}" data-kv="li">兒少社工</button><button class="${state.kView==='zh'?'on':''}" data-kv="zh">獨老社工</button></div></h2><div class="bd" style="${L?'':'opacity:.5'}">
+     <div style="font-size:14px;margin-bottom:8px">${v.who} 看 <b style="font-weight:500">${v.about}</b></div>
+     <table class="t">${v.rows.map(r=>`<tr><td>${r[0]}</td><td style="white-space:nowrap" class="${r[2]}">${r[2]==='ok'?'✓':'✕'} ${r[1]}</td><td class="muted" style="font-size:12.5px">${r[3]}</td></tr>`).join('')}</table></div></div>
+    <div class="card"><h2>跨方案提醒 ${L?'<span class="tag t-ai">1 則</span>':''}</h2><div class="bd" style="font-size:14px;display:flex;flex-direction:column;gap:10px;${L?'':'opacity:.5'}">
+     <div class="alert"><span>!</span><div><b>10/25 林秀英浴室跌倒，需休養兩週</b>張社工記錄 → 已通知李社工：小宇、小晴這兩週的接送可能中斷。<div class="muted" style="font-size:12.5px;margin-top:4px">只傳「重大事件」這一類，不傳傷勢與用藥細節</div></div></div>
+     <div class="alert" style="background:var(--ai-bg);border-color:var(--ai)"><span>⟲</span><div><b>下週兩位社工都排了訪視</b>李社工 10/29 訪陳家、張社工 10/30 訪林秀英，建議改為聯合訪視。</div></div></div></div>
+    <div class="card"><h2>全單位統計 <small>去除重複</small></h2><div class="bd" style="font-size:14px;display:flex;flex-direction:column;gap:6px">
+     <div class="row" style="justify-content:space-between"><span>服務人數（全單位）</span><b class="mono">4 人</b></div>
+     <div class="row" style="justify-content:space-between"><span>服務戶數</span><b class="mono">2 戶</b></div>
+     <div class="row" style="justify-content:space-between"><span>方案人次</span><span class="muted">各方案照算，不互相扣除</span></div></div></div>
+   </div>
+  </div>`;
+}
+function bindKLink(){
+  const a=$('#kLink'), b=$('#kUnlink'); if(a)a.onclick=()=>{state.kLinked=true;render()}; if(b)b.onclick=()=>{state.kLinked=false;render()};
+  document.querySelectorAll('[data-kv]').forEach(x=>x.onclick=()=>{state.kView=x.dataset.kv;render()});
+}
+
+/* ---------- 跨方案查詢與報告（三家試辦單位共通需求） ---------- */
+state.ixQ='陳淑芬'; state.ixRep='family'; state.ixDone=false;
+const IX_ROWS=[
+ // 成員, 個人編號, 家戶, 方案, 期間, 主責, 次數(115/01–10), 最近, 我的方案?
+ ['陳淑芬','P0231-01','F115-0231','家庭支持服務','115/10–','李社工',3,'10/22 家訪',true],
+ ['陳淑芬','P0231-01','F115-0231','親職團體','115/08','團體帶領人',2,'08/23 團體',false],
+ ['小宇','P0231-02','F115-0231','兒少據點課後陪伴','115/03–','據點 吳老師',46,'10/21 出席',true],
+ ['小晴','P0231-03','F115-0231','6 歲以下關懷訪視','113/09–114/03（結案）','李社工',0,'114/03 結案',true],
+ ['林秀英','P0418-01','F115-0418','獨老關懷（問安＋家訪）','114/06–','張社工',44,'10/25 家訪',false],
+ ['林秀英','P0418-01','F115-0418','實物給付（物資）','115/02–','張社工',5,'10/03 領取',false]
+];
+const IX_CNT=[['家庭支持服務','家訪 2・電訪 1',3],['兒少據點課後陪伴','出席 46',46],['親職團體','出席 2',2],['獨老關懷','電話問安 38・家訪 6',44],['實物給付','物資 5',5]];
+function vKIndex(){
+  const tot=IX_CNT.reduce((a,b)=>a+b[2],0);
+  const rep={family:'家庭服務摘要（陳家＋關聯家戶）',person:'個案服務摘要（陳淑芬）',prog:'方案成果統計（家庭支持服務）'}[state.ixRep];
+  return `<div class="head"><div><h1>跨方案查詢與報告：收案時就看到全家在本會的服務，報告一鍵產出</h1><p>三家試辦單位都承接 2 項以上方案。新案進來，輸入姓名或身分證，就能看到這個人與家人在本會其他方案有沒有服務、主責是誰、服了幾次；要寫報告時，摘要與服務次數直接產出。</p></div>
+   <div class="row"><span class="tag t-au">不介接政府系統・用匯入檔與會內紀錄</span></div></div>
+  <div class="card" style="margin-bottom:16px"><div class="bd row" style="gap:12px">
+   <input value="${esc(state.ixQ)}" aria-label="查詢" style="flex:1;min-width:220px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:var(--panel)">
+   <span class="muted" style="font-size:13px">可用：姓名＋生日、身分證（地端雜湊比對）、電話、家庭編號</span>
+   <button class="btn pri">查詢</button></div></div>
+  <div class="grid" style="grid-template-columns:minmax(0,1.75fr) minmax(0,1fr)">
+   <div class="stack">
+    <div class="card"><h2>查詢結果 <span class="tag t-ai">2 個家戶・4 人・6 個方案</span><small>服務次數：115/01–115/10</small></h2><div class="bd scroll-x">
+     <table class="t"><tr><th>成員</th><th>方案</th><th>期間</th><th>主責</th><th style="text-align:right;white-space:nowrap">次數</th><th style="white-space:nowrap">最近一次</th><th>內容</th></tr>
+     ${IX_ROWS.map((r,i)=>`<tr${i===4?' style="border-top:2px solid var(--line)"':''}><td style="white-space:nowrap">${r[0]}<br><span class="mono muted" style="font-size:12px">${r[1]}・${r[2]}</span></td><td>${r[3]}</td><td style="font-size:13px">${r[4]}</td><td style="white-space:nowrap;font-size:13.5px">${r[5]}</td><td class="mono" style="text-align:right">${r[6]}</td><td style="font-size:13px;white-space:nowrap">${r[7]}</td><td style="white-space:nowrap">${r[8]?'<span class="tag t-au">可看</span>':'<span class="tag t-off" style="text-decoration:none">🔒 需同意</span>'}</td></tr>`).join('')}</table>
+     <div class="muted" style="font-size:12.5px;margin-top:8px">其他方案預設只顯示「有沒有服務、期間、主責、次數」；紀錄內容要本人同意加業務需要才開放。保護性通報不出現在查詢結果。</div></div></div>
+    <div class="alert"><span>⟲</span><div><b>收案提醒</b>小宇在本會據點、外婆林秀英在獨老方案都在服務中。建議與吳老師、張社工聯繫，避免重複訪視、資訊落差。</div></div>
+   </div>
+   <div class="stack">
+    <div class="card"><h2>產出報告</h2><div class="bd" style="display:flex;flex-direction:column;gap:12px">
+     <div class="seg" style="flex-wrap:wrap"><button class="${state.ixRep==='family'?'on':''}" data-ix="family">家庭摘要</button><button class="${state.ixRep==='person'?'on':''}" data-ix="person">個案摘要</button><button class="${state.ixRep==='prog'?'on':''}" data-ix="prog">方案統計</button></div>
+     <div class="row" style="justify-content:space-between;font-size:14px"><span>期間</span><span class="mono">115/01/01 – 115/10/31</span></div>
+     <button class="btn pri" id="ixGo">${state.ixDone?'✓ 已產出・重新產出':'產出報告草稿'}</button></div></div>
+    <div class="card"><h2>${rep} ${state.ixDone?'<span class="tag t-ai">AI 草稿・待社工確認</span>':''}</h2><div class="bd" style="font-size:14px;display:flex;flex-direction:column;gap:10px;${state.ixDone?'':'opacity:.45'}">
+     <div style="background:var(--panel-2);border-radius:8px;padding:10px 12px;line-height:1.75">陳家為單親家庭，母親兼職，具中低收入資格。115/10 起由本會提供家庭支持服務，已家訪 2 次、電訪 1 次<sup class="src">[1]</sup>；次女 113–114 年曾接受 6 歲以下關懷訪視，已結案<sup class="src">[2]</sup>。</div>
+     <div style="font-size:13px;border-left:3px solid var(--line);padding-left:10px">本會其他方案也在服務這個家庭：據點課後陪伴、親職團體、獨老關懷、實物給付。<span class="muted">未取得同意，只列次數，內容不寫進摘要。</span></div>
+     <table class="t"><tr><th>方案</th><th>服務內容</th><th style="text-align:right">次數</th></tr>${IX_CNT.map(c=>`<tr><td>${c[0]}</td><td class="muted" style="font-size:13px">${c[1]}</td><td class="mono" style="text-align:right">${c[2]}</td></tr>`).join('')}<tr><td><b style="font-weight:500">合計</b></td><td></td><td class="mono" style="text-align:right"><b>${tot}</b></td></tr></table>
+     <div class="muted" style="font-size:12.5px">摘要只用你有權限看的紀錄，每句附出處；次數由程式計算，不經 AI。</div>
+     <div class="row"><button class="btn sm">匯出 Word</button><button class="btn sm">匯出 Excel</button></div></div></div>
+   </div>
+  </div>`;
+}
+function bindKIndex(){
+  document.querySelectorAll('[data-ix]').forEach(b=>b.onclick=()=>{state.ixRep=b.dataset.ix;render()});
+  $('#ixGo').onclick=()=>{state.ixDone=true;render()};
+}
+
+/* ---------- router ---------- */
+/* ---------- 合併後的系統結構：個案工作區＋全單位＋治理 ---------- */
+const CASES={
+ lin:{short:'林阿桃',name:'林阿桃（82）',prog:'獨居老人關懷',hh:'F115-0102',who:['王','王怡君 社工']},
+ chen:{short:'陳家',name:'陳家 F115-0231（3 人）',prog:'家庭支持＋兒少據點',hh:'F115-0231',who:['李','李社工']},
+ xiu:{short:'林秀英',name:'林秀英（69）',prog:'獨居老人關懷＋實物給付',hh:'F115-0418',who:['張','張社工']}
+};
+state.caseId='lin';
+const TABS=[['intake','收案匯入'],['visit','開案訪視'],['status','個案狀況說明'],['geno','家系圖與服務紀錄'],['referral','轉介表單'],['history','服務歷程（跨方案）']];
+/* ---------- 訪後口述 ---------- */
+state.vMode='dict'; state.dictQ='idle';
+const DICT=[['00:00','今仔日去看阿桃姨，伊講膝頭仔猶原真痛，上下樓梯攏愛扶牆。','台語',''],['00:14','送餐這禮拜一開始了，她說便當都有吃完。','','「送參」→「送餐」'],['00:26','女兒上禮拜有打電話回來。','',''],['00:35','她還是說晚上睡不好，我有跟她說下次要做憂鬱量表。','',''],['00:48','下次訪視 11/4，要追蹤長照評估。','','「長召」→「長照」']];
+const DICT_F=[['訪視日期／方式','10/21 家訪','au','口述時間戳'],['健康與行動','膝痛持續，上下樓需扶牆。','hi','00:00'],['用餐狀況','送餐 10/20 起，便當可吃完。','hi','00:14'],['家庭支持','女兒上週來電。','hi','00:26'],['情緒與睡眠','睡眠困擾持續。','mid','00:35'],['後續處置','下次訪視做憂鬱量表；11/04 追蹤長照評估。','hi','00:35、00:48'],['風險判定','','hu','社工親填']];
+function vVisit(){
+  const seg=`<div class="row" style="margin-bottom:14px"><div class="seg"><button class="${state.vMode==='dict'?'on':''}" data-vm="dict">訪後口述（約 1 分鐘）</button><button class="${state.vMode==='rec'?'on':''}" data-vm="rec">訪談錄音（經同意）</button></div><span class="muted" style="font-size:13px">口述是主要方式；完整錄音需受訪者同意，篇幅長的排到下班後處理</span></div>`;
+  return seg+(state.vMode==='dict'?vDict():vVisitRec());
+}
+function bindVisit(){ document.querySelectorAll('[data-vm]').forEach(b=>b.onclick=()=>{state.vMode=b.dataset.vm;render()}); if(state.vMode==='dict')bindDict(); else bindVisitRec(); }
+function vDict(){
+  const q=state.dictQ;
+  return `<div class="head"><div><h1>訪後口述：離開案家後，用手機講 1 分鐘重點</h1><p>不用在現場錄音，也不用回辦公室打字。口述支援華語、台語混用；轉文字只校正錯字、專有名詞和標點，不增刪內容，修改處逐句標出、可點選回聽。之後依獨老訪視表範本帶入欄位。</p></div>
+   <div class="row"><span class="tag t-ai">去識別後才送語言模型</span><span class="tag t-au">手寫關懷表不辨識，原件存附件</span></div></div>
+  <div class="grid g2">
+   <div class="card"><h2>口述逐字稿 <small>林阿桃・10/21 家訪後・00:58</small></h2><div class="bd">
+    ${DICT.map(d=>`<div class="ln" style="grid-template-columns:52px minmax(0,1fr) auto;cursor:default"><span class="tc">${d[0]}</span><span>${esc(d[1])}${d[2]?` <span class="tag t-mid">${d[2]}</span>`:''}${d[3]?`<div class="muted" style="font-size:12.5px">校正：${d[3]}</div>`:''}</span><button class="btn sm" title="回聽這一句">▶ 回聽</button></div>`).join('')}
+    <div class="muted" style="font-size:12.5px;margin-top:8px">收音品質受手機麥克風與環境影響；辨識信心低的句子會標出，請社工確認或回聽。</div>
+   </div></div>
+   <div class="stack">
+    ${q==='idle'?`<div class="card"><h2>帶入訪視紀錄</h2><div class="bd stack" style="gap:10px;font-size:14px"><div>逐字稿已完成。送出後由語言模型依「獨老訪視表」範本帶入欄位。</div><button class="btn pri" id="dictGo" style="align-self:flex-start">送出帶入欄位（短件優先）</button></div></div>`:
+     q==='queued'?`<div class="card"><h2>處理中 <span class="tag t-ai">排隊第 1・短件優先</span></h2><div class="bd stack" style="gap:10px;font-size:14px"><div>預計約 2 分鐘完成，完成後會在「我的今天」通知你。你可以先處理別的事。</div><div class="meter"><i style="width:40%;background:var(--ai)"></i></div><button class="btn sm" id="dictDone" style="align-self:flex-start">示範：處理完成</button></div></div>`:
+     `<div class="card"><h2>帶入結果 <span class="tag t-ai">AI 草稿</span><small>獨老訪視表範本</small></h2><div>
+      ${DICT_F.map(f=>`<div class="fld ${f[2]==='hu'?'hu':f[2]==='au'?'au':'ai'}"><div class="k">${f[0]}<small>出處 ${f[3]}</small></div><div class="v">${f[2]==='hu'?'<textarea placeholder="風險判定由社工填寫"></textarea>':esc(f[1])}</div><div>${f[2]==='hu'?'<span class="tag t-hu">社工親填</span>':f[2]==='au'?'<span class="tag t-au">自動帶入</span>':`<span class="tag ${CONF[f[2]][1]}">${CONF[f[2]][0]}</span>`}</div></div>`).join('')}
+      <div class="row" style="padding:12px 14px;justify-content:space-between"><button class="btn sm">高信心一次確認（4）</button><a class="btn sm pri" href="#export" style="text-decoration:none">確認後產出匯入檔／貼上版</a></div></div></div>`}
+   </div>
+  </div>`;
+}
+function bindDict(){ const g=$('#dictGo'); if(g) g.onclick=()=>{state.dictQ='queued';render()}; const d=$('#dictDone'); if(d) d.onclick=()=>{state.dictQ='done';render()}; }
+
+/* ---------- 處理中佇列（我的今天） ---------- */
+const QUEUE={
+ wang:[['林阿桃・訪後口述帶入','短件','✓ 完成 10:42','ok'],['洪美玉・訪談錄音轉寫（18 分）','長件','排隊第 3・預計 15:40','wait'],['10 月月報彙整','長件','排入今晚 22:00','night'],['賴清水・個案摘要','夜間整理','明早 08:00 可取','night']],
+ li:[['陳家・初篩報告草稿','長件','處理中 60%・預計 11:20','wait'],['蔡家・訪後口述帶入','短件','✓ 完成 09:15','ok']]
+};
+function queueCard(){
+  return `<div class="card"><h2>處理中 <small>封閉主機由三家輪流使用</small></h2><div class="bd al">
+   ${QUEUE[state.user].map(q=>`<div><i class="sev" style="background:${q[3]==='ok'?'var(--auto)':q[3]==='wait'?'var(--ai)':'var(--line)'}"></i><span>${q[0]} <span class="tag" style="background:var(--panel-2);color:var(--fg-2)">${q[1]}</span></span><span style="font-size:13px" class="${q[3]==='ok'?'ok':'muted'}">${q[2]}</span></div>`).join('')}
+   <div class="muted" style="font-size:12.5px">送出後可先做別的事，完成時通知你。短件優先；錄音轉寫、月報、大量匯入排到下班後；下班前可把明天要用的摘要排入夜間整理。</div></div></div>`;
+}
+
+/* ---------- 貼上版 ---------- */
+state.pasteIdx=0; state.pasteCp={};
+function pasteView(){
+  const v=VISITS[state.pasteIdx]; const F=[['個案編號',v[0]],['訪視日期','115/'+v[1]],['訪視方式',v[2]],['訪視結果',v[3]],['異常／需求',v[4]],['後續處置',v[5]]];
+  return `<div class="grid" style="grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)">
+   <div class="card"><h2>貼上版 <small>依中央平台畫面的欄位順序排好</small><span class="tag t-au" style="margin-left:auto">匯出前檢查：必填齊全</span></h2><div class="bd">
+    <div class="row" style="margin-bottom:10px"><span class="muted" style="font-size:13px">第 ${state.pasteIdx+1} / ${VISITS.length} 筆</span><button class="btn sm" id="pPrev" ${state.pasteIdx?'':'disabled'}>上一筆</button><button class="btn sm" id="pNext" ${state.pasteIdx<VISITS.length-1?'':'disabled'}>下一筆</button></div>
+    ${F.map((f,i)=>`<div class="fld au" style="grid-template-columns:110px minmax(0,1fr) auto"><div class="k">${i+1}. ${f[0]}</div><div class="v">${esc(f[1])}</div><div><button class="btn sm" data-cp="${i}">${state.pasteCp[state.pasteIdx+'-'+i]?'✓ 已複製':'複製'}</button></div></div>`).join('')}
+    <div class="row" style="margin-top:12px"><button class="btn pri" id="cpAll">整筆依序複製（Tab 分隔）</button><span class="muted" style="font-size:12.5px">在平台第一格貼上，Tab 會自動跳到下一格</span></div>
+   </div></div>
+   <div class="card"><h2>平台畫面（示意）<small>欄位順序一致</small></h2><div class="bd" style="display:flex;flex-direction:column;gap:8px">
+    ${F.map((f,i)=>`<div><div class="muted" style="font-size:12.5px">${f[0]}</div><div style="border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--panel-2);min-height:32px;font-size:14px">${state.pasteCp[state.pasteIdx+'-'+i]?esc(f[1]):''}</div></div>`).join('')}
+    <div class="muted" style="font-size:12.5px">工具不介接、不回寫政府平台。平台開放批次匯入時改用匯入檔；還沒開放時用貼上版，社工照原方式登錄，但不用逐欄查找資料。</div>
+   </div></div>
+  </div>`;
+}
+
+/* ---------- 重複欄位地圖 ---------- */
+const FM_FORMS=['社會局名冊','會內個案管理表','訪視表','中央平台','縣市社政系統','月報','長照轉介單','送餐轉介單'];
+const FM_ROWS=[['姓名','共通',[1,1,1,1,1,0,1,1]],['身分證字號','共通',[1,1,0,1,1,0,1,0]],['出生日期','共通',[1,1,0,1,1,0,1,1]],['地址','共通',[1,1,0,1,1,0,1,1]],['電話','共通',[1,1,1,1,0,0,1,1]],['緊急聯絡人','共通',[0,1,0,1,1,0,1,1]],['福利身分','共通',[1,1,0,1,1,1,1,0]],['訪視日期','共通',[0,1,1,1,1,1,0,0]],['訪視方式','代碼不同',[0,1,1,1,1,1,0,0]],['需求等級','中央＋縣市',[0,1,0,1,1,1,1,0]],['飲食禁忌','送餐單位特有',[0,0,0,0,0,0,0,1]]];
+state.fmDone=false;
+function vFieldMap(){
+  const tot=FM_ROWS.reduce((a,r)=>a+r[2].reduce((x,y)=>x+y,0),0);
+  const base=FM_ROWS.slice(0,7).reduce((a,r)=>a+r[2].reduce((x,y)=>x+y,0),0);
+  const heat=n=>n>=6?'var(--low-bg)':n>=4?'var(--mid-bg)':'var(--panel-2)';
+  const aff=[['會內個案管理表','自動更新'],['長照轉介單（草稿）','自動更新'],['送餐轉介資料包（已送出）','產出更正通知，經現行管道送出'],['縣市社政系統','產出更新匯入檔'],['中央平台','產出貼上版（地址欄）'],['社會局名冊','不由本會修改，列入月報異動說明']];
+  return `<div class="head"><div><h1>重複欄位地圖：同一筆資料，在幾份表單裡重打</h1><p>各份表單的欄位都對應到共用資料字典。地圖標出重複登打最多的地方；資料變動時一處修改，系統列出所有受影響的表單，經社工確認後同步。以獨居老人關懷為例。</p></div>
+   <span class="tag t-mid">每位長者的 7 個基本欄位，合計出現 ${base} 次</span></div>
+  <div class="card" style="margin-bottom:16px"><h2>重複熱點 <small>● 表示該表單有這個欄位；顏色越深重複越多</small></h2><div class="bd scroll-x">
+   <table class="t"><tr><th>資料字典欄位</th><th>類型</th>${FM_FORMS.map(f=>`<th style="text-align:center;font-size:12.5px">${f}</th>`).join('')}<th style="text-align:right">出現次數</th></tr>
+   ${FM_ROWS.map(r=>{const n=r[2].reduce((x,y)=>x+y,0);return `<tr><td><b style="font-weight:500">${r[0]}</b></td><td style="font-size:12.5px" class="muted">${r[1]}</td>${r[2].map(x=>`<td style="text-align:center;color:var(--fg-2)">${x?'●':''}</td>`).join('')}<td class="mono" style="text-align:right"><span style="background:${heat(n)};border-radius:4px;padding:1px 8px">${n}</span></td></tr>`}).join('')}</table>
+   <div class="muted" style="font-size:12.5px;margin-top:8px">共 ${FM_ROWS.length} 個欄位、${tot} 處登打點。單位提供的數字：700 多位長者、每筆重複登打約 2 分鐘，每個訪視週期約 23 小時。</div></div></div>
+  <div class="grid g2">
+   <div class="card"><h2>同步更新 <small>林阿桃・地址變更</small></h2><div class="bd" style="font-size:14px;display:flex;flex-direction:column;gap:10px">
+    <div class="row"><span class="muted">原</span><span style="text-decoration:line-through">北區光明路 25 號 2 樓</span><span class="muted">→ 新</span><b style="font-weight:500">北區光明路 31 號 1 樓</b></div>
+    <table class="t"><tr><th>受影響的文件</th><th>處理方式</th></tr>${aff.map(a=>`<tr><td>${a[0]}</td><td style="font-size:13.5px">${state.fmDone?'<span class="ok">✓ </span>':''}${a[1]}</td></tr>`).join('')}</table>
+    ${state.fmDone?'<span class="ok">✓ 已套用 6 份，修改寫入差異軌跡</span>':'<button class="btn pri" id="fmGo" style="align-self:flex-start">確認套用（6 份）</button>'}
+    <div class="muted" style="font-size:12.5px">政府系統的資料仍由社工照原方式更新；工具只產出更新後的匯入檔或貼上版。</div></div></div>
+   <div class="stack">
+    <div class="card"><h2>統一改寫</h2><div class="bd" style="font-size:14px;display:flex;flex-direction:column;gap:8px">
+     <div>服務狀態「暫停」拆成「暫停（住院）」「暫停（其他）」</div><div class="muted" style="font-size:13px">影響 3 份範本、1 份月報統計定義；批次套用並記入差異軌跡</div><button class="btn sm" style="align-self:flex-start">預覽影響範圍</button></div></div>
+    <div class="card"><h2>交換規格草案 <small>政府平台暫不調整也能先備妥</small></h2><div class="bd"><pre class="json">{
+  "field": "address",
+  "label": "地址",
+  "type": "string",
+  "sensitivity": "共享層",
+  "used_by": ["會內個案管理表","中央平台",
+              "縣市社政系統","長照轉介單","送餐轉介單"]
+}</pre></div></div>
+   </div>
+  </div>`;
+}
+function bindFieldMap(){ const g=$('#fmGo'); if(g) g.onclick=()=>{state.fmDone=true;render()}; }
+
+/* ---------- 登入與角色：社工、督導各自的頁面 ---------- */
+const USERS={
+ wang:{role:'sw',name:'王怡君',title:'社工',av:'王',prog:'elder',cases:['lin'],desc:'獨居老人關懷・38 位個案'},
+ li:{role:'sw',name:'李社工',title:'社工',av:'李',prog:'fam',cases:['chen'],desc:'家庭支持服務・16 戶'},
+ sup:{role:'sup',name:'陳督導',title:'督導',av:'督',prog:'elder',cases:['lin','chen','xiu'],desc:'督導獨老、家支、據點 3 個方案・8 位社工'}
+};
+state.user=null;
+const U=()=>USERS[state.user];
+const ORG=[
+ {id:'today',n:'☀',name:'我的今天',grp:'我的工作',roles:['sw']},
+ {id:'formimp',n:'⇪',name:'訪視表單匯入',grp:'我的工作',roles:['sw']},
+ {id:'plist',n:'☰',name:'我的個案',grp:'我的工作',roles:['sw']},
+ {id:'s-home',n:'☀',name:'我的團隊今天',grp:'督導工作',roles:['sup']},
+ {id:'s-review',n:'✓',name:'審核佇列',grp:'督導工作',roles:['sup']},
+ {id:'s-assign',n:'⇄',name:'派案',grp:'督導工作',roles:['sup']},
+ {id:'progs',n:'≡',name:'方案總覽',grp:'督導工作',roles:['sup']},
+ {id:'plist',n:'☰',name:'方案個案清單',grp:'督導工作',roles:['sup']},
+ {id:'k-index',n:'⌕',name:'跨方案查詢與報告',grp:'全單位',roles:['sw','sup']},
+ {id:'fieldmap',n:'⊞',name:'重複欄位地圖',grp:'全單位',roles:['sw','sup']},
+ {id:'k-link',n:'⟷',name:'人員比對與家戶連結',grp:'全單位',roles:['sup']},
+ {id:'k-stats',n:'Σ',name:'成果人次統計',grp:'全單位',roles:['sup']},
+ {id:'export',n:'⇩',name:'匯入檔、貼上版與月報',grp:'全單位',roles:['sw','sup']},
+ {id:'dash',n:'▤',name:'案件分析',grp:'全單位',roles:['sup']},
+ {id:'rules',n:'⚙',name:'共享規則、提醒與範本',grp:'規則與治理',roles:['sup']},
+ {id:'audit',n:'⎘',name:'差異軌跡稽核',grp:'規則與治理',roles:['sup']},
+ {id:'measure',n:'⏱',name:'基線量測',grp:'規則與治理',roles:['sup']}
+];
+const allowed=id=>ORG.some(o=>o.id===id&&o.roles.includes(U().role));
+const home=()=>U().role==='sup'?'s-home':'today';
+function route(){
+  if(!state.user) return {type:'login'};
+  const h=location.hash.slice(1);
+  if(h.includes(':')){const [c,t]=h.split(':'); if(CASES[c]&&TABS.some(x=>x[0]===t)&&U().cases.includes(c)) return {type:'case',c,t};}
+  if(allowed(h)) return {type:'org',id:h};
+  return {type:'org',id:home()};
+}
+function nav(r){
+  let h='',g='';
+  const mine=ORG.filter(o=>o.roles.includes(U().role));
+  const add=o=>{ if(o.grp!==g){h+=`<div class="grp">${o.grp}</div>`;g=o.grp}
+    h+=`<a href="#${o.id}" class="${r.type==='org'&&r.id===o.id?'on':''}"><span class="n">${o.n}</span>${o.name}</a>`; };
+  mine.filter(o=>o.grp==='我的工作'||o.grp==='督導工作').forEach(add);
+  const cs=U().cases; if(!cs.includes(state.caseId)) state.caseId=cs[0];
+  h+=`<div class="grp">個案工作區</div>${cs.length>1?`<div style="padding:2px 10px 6px"><select id="caseSel" aria-label="切換個案" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--panel)">${cs.map(k=>`<option value="${k}" ${k===state.caseId?'selected':''}>${CASES[k].name}</option>`).join('')}</select></div>`:`<div style="padding:2px 12px 6px;font-size:13px" class="muted">目前：${CASES[state.caseId].name}（從「我的個案」切換）</div>`}`;
+  const done=state.caseId==='lin'?{intake:true,visit:true,status:state.finalized,geno:true,referral:state.sent}:{};
+  TABS.forEach(([t,n],i)=>{ const has=CASEVIEW[state.caseId][t], on=r.type==='case'&&r.t===t;
+    h+=`<a href="#${state.caseId}:${t}" class="${on?'on':''}" ${has?'':'style="opacity:.6"'}><span class="n">${i+1}</span>${n}${done[t]?'<span class="ok">✓</span>':''}${has?'':'<span class="ok" style="color:var(--fg-3)">略</span>'}</a>`; });
+  g=''; mine.filter(o=>o.grp!=='我的工作'&&o.grp!=='督導工作').forEach(add);
+  $('#nav').innerHTML=h;
+  const sel=$('#caseSel'); if(sel) sel.onchange=e=>{state.caseId=e.target.value; const cur=route(); location.hash=`${state.caseId}:${cur.type==='case'?cur.t:'geno'}`;};
+}
+function crumb(r){
+  if(r.type==='case'){const c=CASES[r.c]; $('#crumb').innerHTML=`isnt社會福利基金會 › ${c.prog} › ${c.name} › <b>${TABS.find(x=>x[0]===r.t)[1]}</b>`;}
+  else $('#crumb').innerHTML= r.id==='plist'?`isnt社會福利基金會 › ${U().role==='sup'?'方案總覽':'我的工作'} › <b>${PROGS[state.pg].name}</b>`:`isnt社會福利基金會 › ${ORG.find(o=>o.id===r.id).grp} › <b>${ORG.find(o=>o.id===r.id).name}</b>`;
+  document.querySelector('.who').innerHTML=`<i>${U().av}</i><span>${U().name} ${U().title}</span><button class="btn sm" id="logout" style="margin-left:6px">切換身分</button>`;
+  $('#logout').onclick=()=>{state.user=null;location.hash='';render()};
+}
+function vLogin(){
+  const card=(k,t,sub,items)=>`<button class="card" data-login="${k}" style="text-align:left;padding:28px;cursor:pointer;display:flex;flex-direction:column;gap:12px;border:1px solid var(--line)">
+      <div class="row" style="gap:12px"><span class="who"><i style="width:44px;height:44px;font-size:18px">${USERS[k].av}</i></span><div><b style="font-size:24px">${t}</b><div class="muted" style="font-size:13.5px">${sub}</div></div></div>
+      <ul style="margin:0;padding-left:20px;font-size:14px;color:var(--fg-2);line-height:1.8">${items.map(i=>`<li>${i}</li>`).join('')}</ul>
+      <span class="btn pri" style="align-self:flex-start">進入${t}頁面 →</span></button>`;
+  return `<div style="max-width:880px;margin:6vh auto 0;display:flex;flex-direction:column;gap:20px">
+   <div class="row" style="gap:12px"><div class="logo" style="width:44px;height:44px;font-size:19px">談</div><div><b style="font-size:22px">一談多用</b><div class="muted">isnt社會福利基金會・Demo</div></div></div>
+   <p style="margin:0;color:var(--fg-2)">同一套系統，依登入角色顯示不同頁面。請選擇要看的角色：</p>
+   <div class="grid g2">
+    ${card('wang','社工','王怡君・獨居老人關懷・38 位個案',['我的今天：今天的訪視、待確認草稿、對方回覆','訪視表單匯入（Google 表單／紙本拍照）','個案工作區：收案、訪視、狀況說明、家系圖、轉介'])}
+    ${card('sup','督導','陳督導・督導 3 個方案、8 位社工',['我的團隊今天：需要督導知道的個案、團隊負荷','審核佇列：逐筆審核與例行批次核可','派案建議、方案總覽、報表檢核、規則設定'])}
+   </div>
+   <div class="muted" style="font-size:12.5px">示範版不需密碼；正式系統以組織帳號登入，權限依角色與方案設定。右上角「切換身分」可回到這一頁。</div></div>`;
+}
+function bindLogin(){ document.querySelectorAll('[data-login]').forEach(b=>b.onclick=()=>{state.user=b.dataset.login; const u=U(); state.caseId=u.cases[0]; state.pg=u.prog; state.pf={mine:u.role==='sw',st:'all',rem:false,cross:false,q:''}; location.hash=home(); render();}); }
+
+/* ---------- 社工首頁（依登入者） ---------- */
+const TODAY={
+ wang:{date:'10/23（四）',n:38,kpi:[3,'家訪 2・電訪 1',2,1,1],
+  sched:[['10:00','<a href="#lin:geno">林阿桃</a> 82','家訪','訪後用手機口述 1 分鐘；送餐首週追蹤'],['14:00','鄭清水 68','電訪','名冊地址異動，確認現住址'],['15:30','洪美玉 86','家訪','上次勾選「情緒需關注」，本次追蹤']],
+  todo:[['林阿桃・個案狀況說明','中低信心要你判斷，高信心可一次確認','#lin:status','審閱'],['訪視表單匯入・本週 18 筆','16 筆已自動對應，2 筆等你確認是哪位個案','#formimp','處理']],
+  reply:[['林阿桃・送餐服務轉介','對方 10/18 電話回覆「已收案，10/23 開始送餐」；AI 已整理成進度摘要，等你確認寫入','#lin:referral']],
+  rem:[['low','賴清水：訪視逾期 5 天','排訪視'],['mid','林春嬌：問安連續 3 次未接','改家訪']]},
+ li:{date:'10/23（四）',n:16,kpi:[2,'家訪 2',2,0,0],
+  sched:[['10:30','<a href="#chen:geno">陳家</a>（母＋2）','家訪','討論早療與學校轉介；帶同意書'],['15:00','蔡家（母＋1）','家訪','社福中心共訪']],
+  todo:[['陳家・轉介早療與學校','兩張轉介單已帶入，轉介原因與兒少表意待你填寫','#chen:referral','填寫'],['陳家・初篩訪視報告','AI 草稿 6 段，安全評估待你親填','#chen:intake','審閱']],
+  reply:[['陳家・跨方案提醒','外婆林秀英（獨老・張社工）10/25 跌倒，休養兩週；小宇、小晴接送可能中斷','#chen:geno']],
+  rem:[['mid','許家：社福中心共訪待安排','聯絡']]}
+};
+function vToday(){
+  const T=TODAY[state.user], u=U();
+  return `<div class="head"><div><h1>我的今天：${u.name}，${T.date}</h1><p>今天要訪誰、哪些草稿等你確認、哪些對方回覆了，都在這一頁。提醒規則由督導設定，只列需要你處理的。</p></div>
+   <div class="row">${state.user==='wang'?'<a class="btn" href="#formimp" style="text-decoration:none">匯入訪視表單</a>':''}<a class="btn pri" href="#plist" style="text-decoration:none">我的個案（${T.n}）</a></div></div>
+  <div class="kpis" style="margin-bottom:16px">
+   <div class="card kpi"><small>今天訪視</small><div class="big">${T.kpi[0]}</div><div class="d">${T.kpi[1]}</div></div>
+   <div class="card kpi"><small>等你處理</small><div class="big">${T.todo.length}</div><div class="d">AI 草稿、表單、轉介</div></div>
+   <div class="card kpi"><small>督導退回</small><div class="big">${state.user==='wang'&&state.sup==='back'?1:0}</div><div class="d">${state.user==='wang'&&state.sup==='back'?'待修改':'沒有被退回的'}</div></div>
+   <div class="card kpi"><small>回覆與提醒</small><div class="big">${T.reply.length}</div><div class="d">轉介結果、跨方案</div></div>
+   <div class="card kpi"><small>逾期</small><div class="big" style="${T.kpi[4]?'color:var(--low)':''}">${T.kpi[4]}</div><div class="d">訪視、回覆</div></div>
+  </div>
+  <div class="grid g2">
+   <div class="stack">
+    <div class="card"><h2>今天的行程</h2><div class="bd"><table class="t"><tr><th>時間</th><th>個案</th><th>方式</th><th>準備</th></tr>
+     ${T.sched.map(s=>`<tr><td class="mono">${s[0]}</td><td>${s[1]}</td><td>${s[2]}</td><td style="font-size:13px">${s[3]}</td></tr>`).join('')}</table></div></div>
+    ${queueCard()}
+    <div class="card"><h2>提醒 <small>督導設定的規則</small></h2><div class="bd al">${T.rem.map(r=>`<div><i class="sev" style="background:var(--${r[0]})"></i><span>${r[1]}</span><button class="btn sm">${r[2]}</button></div>`).join('')}</div></div>
+   </div>
+   <div class="stack">
+    <div class="card"><h2>等你處理</h2><div class="bd al">
+     ${T.todo.map(t=>`<div><i class="sev" style="background:var(--ai)"></i><span><b style="font-weight:500">${t[0]}</b><br><span class="muted" style="font-size:12.5px">${t[1]}</span></span><a class="btn sm pri" href="${t[2]}" style="text-decoration:none">${t[3]}</a></div>`).join('')}
+     ${state.user==='wang'&&state.sup==='back'?`<div><i class="sev" style="background:var(--low)"></i><span><b style="font-weight:500">林阿桃・督導退回</b><br><span class="muted" style="font-size:12.5px">陳督導：請補充送餐服務啟動日期</span></span><a class="btn sm" href="#lin:status" style="text-decoration:none">修改</a></div>`:''}
+    </div></div>
+    <div class="card"><h2>回覆與跨方案提醒</h2><div class="bd al">${T.reply.map(t=>`<div><i class="sev" style="background:var(--auto)"></i><span><b style="font-weight:500">${t[0]}</b><br><span class="muted" style="font-size:12.5px">${t[1]}</span></span><a class="btn sm" href="${t[2]}" style="text-decoration:none">查看</a></div>`).join('')}</div></div>
+   </div>
+  </div>`;
+}
+function bindToday(){}
+
+/* ---------- 督導：我的團隊今天 ---------- */
+const TEAM=[['王怡君','獨老',38,12,1,2],['張社工','獨老＋實物',41,10,1,2],['黃社工','獨老',35,9,2,1],['周社工','獨老',44,14,2,0],['李社工','家支',16,6,0,2],['蔡社工','家支',17,5,0,0],['吳老師','據點',36,15,0,0]];
+function vSHome(){
+  const mx=Math.max(...TEAM.map(t=>t[2]));
+  return `<div class="head"><div><h1>我的團隊今天：陳督導，10/23（四）</h1><p>先處理需要督導知道的個案，再看待審核。團隊負荷用來調整派案，不用來比較個人績效。</p></div>
+   <div class="row"><a class="btn" href="#s-assign" style="text-decoration:none">派案（6 位新個案）</a><a class="btn pri" href="#s-review" style="text-decoration:none">審核佇列（${REV.length}）</a></div></div>
+  <div class="kpis" style="margin-bottom:16px">
+   <div class="card kpi"><small>需要督導知道</small><div class="big" style="color:var(--low)">3</div><div class="d">高風險、情緒需關注、重大事件</div></div>
+   <div class="card kpi"><small>待審核</small><div class="big">${REV.length}</div><div class="d">其中 ${REV.filter(r=>r.batch).length} 筆例行可批次</div></div>
+   <div class="card kpi"><small>待派案</small><div class="big">6</div><div class="d">社會局名冊新增</div></div>
+   <div class="card kpi"><small>團隊逾期</small><div class="big">6</div><div class="d">訪視、核章、回覆</div></div>
+   <div class="card kpi"><small>最近報表</small><div class="big" style="font-size:22px">11/05</div><div class="d">獨老縣市月報・完整度 92%</div></div>
+  </div>
+  <div class="grid g2">
+   <div class="stack">
+    <div class="card"><h2>需要督導知道 <small>依規則自動通知</small></h2><div class="bd al">
+     <div><i class="sev" style="background:var(--low)"></i><span><b style="font-weight:500">林阿桃（王怡君）</b><br><span class="muted" style="font-size:12.5px">社工判定中風險；有自我價值感低的陳述，建議老人憂鬱量表追蹤</span></span><a class="btn sm" href="#s-review" style="text-decoration:none">看審核</a></div>
+     <div><i class="sev" style="background:var(--mid)"></i><span><b style="font-weight:500">洪美玉（王怡君）</b><br><span class="muted" style="font-size:12.5px">訪視表單連續 2 次勾選「情緒需關注」</span></span><button class="btn sm">安排討論</button></div>
+     <div><i class="sev" style="background:var(--mid)"></i><span><b style="font-weight:500">林秀英（張社工）⟷ 陳家（李社工）</b><br><span class="muted" style="font-size:12.5px">外婆跌倒影響孫子女接送；兩方案下週都排了訪視</span></span><button class="btn sm">建議聯合訪視</button></div>
+    </div></div>
+    <div class="card"><h2>報表截止</h2><div class="bd" style="display:flex;flex-direction:column;gap:10px;font-size:14px">
+     ${[['11/05','獨老縣市月報',92],['11/10','脆家系統建檔（家支）',75],['11/15','實物給付核銷',100]].map(r=>`<div><div class="row" style="justify-content:space-between"><span><span class="mono">${r[0]}</span>　${r[1]}</span><span class="mono">${r[2]}%</span></div><div class="meter" style="margin-top:4px;height:6px"><i style="width:${r[2]}%;background:${r[2]===100?'var(--auto)':'var(--ai)'}"></i></div></div>`).join('')}
+     <a class="btn sm" href="#export" style="text-decoration:none;align-self:flex-start">檢核並匯出</a></div></div>
+   </div>
+   <div class="card"><h2>團隊負荷 <small>派案參考，不作績效比較</small></h2><div class="bd scroll-x"><table class="t"><tr><th>人員</th><th>方案</th><th>在案</th><th style="text-align:right">本週訪視</th><th style="text-align:right">逾期</th><th style="text-align:right">待審</th></tr>
+    ${TEAM.map(t=>`<tr><td style="white-space:nowrap">${t[0]}</td><td style="font-size:13px">${t[1]}</td><td style="min-width:120px"><div class="row" style="gap:6px;flex-wrap:nowrap"><div style="flex:1;height:6px;background:var(--line-2);border-radius:3px"><div style="width:${t[2]/mx*100}%;height:100%;background:${t[2]>=40?'var(--mid)':'var(--ai)'};border-radius:3px"></div></div><span class="mono" style="font-size:13px">${t[2]}</span></div></td><td class="mono" style="text-align:right">${t[3]}</td><td class="mono" style="text-align:right;${t[4]?'color:var(--low)':''}">${t[4]}</td><td class="mono" style="text-align:right">${t[5]}</td></tr>`).join('')}</table>
+    <div class="muted" style="font-size:12.5px;margin-top:8px">AI 採用率、修改率只在「稽核」頁看團隊整體，用來檢討 AI，不顯示到個人。</div></div></div>
+  </div>`;
+}
+
+/* ---------- 督導：審核佇列 ---------- */
+const REV=[
+ {id:'r1',who:'王怡君',case:'林阿桃',doc:'個案狀況說明（開案）',tag:['中風險','開案'],pri:1,batch:false},
+ {id:'r2',who:'李社工',case:'陳家',doc:'初篩訪視報告',tag:['開案'],pri:2,batch:false},
+ {id:'r3',who:'黃社工',case:'林福來',doc:'轉介長照評估',tag:['轉介'],pri:2,batch:false},
+ {id:'r4',who:'周社工',case:'王月娥',doc:'結案評估',tag:['結案'],pri:2,batch:false},
+ ...['郭國華','邱素珍','陳月娥','楊阿土','王金枝','李福來','洪金枝'].map((n,i)=>({id:'b'+i,who:['周社工','黃社工','張社工'][i%3],case:n,doc:'例行電訪紀錄',tag:['例行'],pri:3,batch:true}))
+];
+state.revSel='r1'; state.revDone={}; state.revPick={};
+function vSReview(){
+  const left=REV.filter(r=>!state.revDone[r.id]); const cur=REV.find(r=>r.id===state.revSel);
+  const npick=Object.keys(state.revPick).filter(k=>!state.revDone[k]).length;
+  return `<div class="head"><div><h1>審核佇列：先看要緊的，例行的批次核可</h1><p>高風險、開案、結案、轉介一定逐筆看；例行電訪可批次核可（哪些可批次由單位共同議定）。審核只顯示重點：低信心、社工改過的地方、社工親填的判斷。</p></div>
+   <span class="tag ${left.length?'t-mid':'t-hi'}">${left.length?`待審 ${left.length} 筆`:'今天的審核都完成了'}</span></div>
+  <div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1.35fr)">
+   <div class="card"><h2>待審核 <small>依急迫程度排序</small></h2><div class="bd" style="display:flex;flex-direction:column;gap:8px">
+    ${REV.map(r=>`<div class="exi ${r.pri===1?'low':r.pri===2?'mid':'hi'}" style="${state.revSel===r.id?'background:var(--ai-bg)':''};${state.revDone[r.id]?'opacity:.5':''}" data-rv="${r.id}">
+      <div class="r1"><span>${r.batch?`<input type="checkbox" data-rp="${r.id}" ${state.revPick[r.id]?'checked':''} ${state.revDone[r.id]?'disabled':''} aria-label="選取"> `:''}<b style="font-weight:500">${r.case}</b>・${r.doc}</span><span style="font-size:12.5px" class="${state.revDone[r.id]?'ok':'muted'}">${state.revDone[r.id]?(state.revDone[r.id]==='ok'?'✓ 已核可':'↩ 已退回'):r.who}</span></div>
+      <div class="meta">${r.tag.map(t=>`<span class="tag ${t==='中風險'?'t-low':t==='例行'?'t-hi':'t-mid'}">${t}</span>`).join('')}</div></div>`).join('')}
+    <div class="row" style="margin-top:4px"><button class="btn sm" id="pickAll">選取全部例行電訪</button><button class="btn sm pri" id="batchOk" ${npick?'':'disabled'}>批次核可（${npick}）</button></div>
+   </div></div>
+   <div class="card"><h2>${cur.case}・${cur.doc} <small>${cur.who} 送審</small></h2><div class="bd" style="display:flex;flex-direction:column;gap:12px;font-size:14px">
+    ${cur.id==='r1'?`
+     <div><div class="muted" style="font-size:12.5px;margin-bottom:4px">社工親填的判斷</div><div style="background:var(--human-bg);border-radius:8px;padding:10px 12px">風險判定：<b>中</b>　需求等級：<b>第 3 級</b><br>情緒低落與自我價值感低之陳述需追蹤，未表達自殺意念；下次訪視以老人憂鬱量表評估。建議連結送餐與長照需要評估。</div></div>
+     <div><div class="muted" style="font-size:12.5px;margin-bottom:4px">社工改過 AI 的地方（1 處）</div><div class="diff">#8 居住與生活\n- AI：可能有備餐困難，飲食單一。\n+ 社工：有備餐困難：近月多以泡麵果腹，自述買菜需走遠路。</div></div>
+     <div><div class="muted" style="font-size:12.5px;margin-bottom:4px">低信心內容與社工處理（2 筆）</div>
+      <div class="it" style="grid-template-columns:72px 1fr auto"><span class="tag t-low">低信心</span><div class="txt">有自我價值感低的陳述（「老了沒用、拖累人」）。<div class="why">社工：確認・出處 08:05</div></div><button class="btn sm" data-cm="1">${state.revCm?'✓ 已註記':'在這句註記'}</button></div>
+      ${state.revCm?'<div style="font-size:13px;color:var(--human);margin:-4px 0 8px 84px">督導註記：下次訪視請一併確認睡眠與食慾，作為憂鬱量表前的觀察。</div>':''}
+      <div class="it" style="grid-template-columns:72px 1fr auto"><span class="tag t-low">低信心</span><div class="txt">有睡眠困擾。<div class="why">社工：確認・出處 08:41</div></div><span></span></div></div>
+     <details><summary class="muted" style="cursor:pointer;font-size:13px">高信心且未修改 9 筆（收合）</summary><div class="muted" style="font-size:13px;margin-top:6px">獨居，公寓 2 樓、無電梯；配偶已歿；女兒住台中……</div></details>`:
+     `<div class="muted">示範版只展開「林阿桃・個案狀況說明」的審核內容；其他項目的審核畫面相同。</div>`}
+    <div class="row" style="justify-content:flex-end;border-top:1px solid var(--line-2);padding-top:12px">
+     ${state.revDone[cur.id]?`<span class="${state.revDone[cur.id]==='ok'?'ok':''}">${state.revDone[cur.id]==='ok'?'✓ 已線上核可（電子簽核，寫入稽核日誌）':'↩ 已退回，社工會在「我的今天」看到'}</span>`:
+     `<button class="btn" data-rd="back">退回（附註記）</button><button class="btn pri" data-rd="ok">核可</button>`}</div>
+   </div></div>
+  </div>`;
+}
+function bindSReview(){
+  document.querySelectorAll('[data-rv]').forEach(d=>d.onclick=e=>{if(e.target.matches('input'))return;state.revSel=d.dataset.rv;render()});
+  document.querySelectorAll('[data-rp]').forEach(c=>c.onchange=()=>{if(c.checked)state.revPick[c.dataset.rp]=1;else delete state.revPick[c.dataset.rp];render()});
+  $('#pickAll').onclick=()=>{REV.filter(r=>r.batch&&!state.revDone[r.id]).forEach(r=>state.revPick[r.id]=1);render()};
+  const bo=$('#batchOk'); if(bo) bo.onclick=()=>{Object.keys(state.revPick).forEach(k=>state.revDone[k]='ok');state.revPick={};render()};
+  const cm=document.querySelector('[data-cm]'); if(cm) cm.onclick=()=>{state.revCm=true;render()};
+  document.querySelectorAll('[data-rd]').forEach(b=>b.onclick=()=>{const v=b.dataset.rd; state.revDone[state.revSel]=v; if(state.revSel==='r1'){state.finalized=true;state.sup=v==='ok'?'ok':'back';} render()});
+}
+
+/* ---------- 督導：派案 ---------- */
+const ASG=[['蘇金蓮',79,'北區光明里','周社工','去年由周社工服務（114 年名冊第 52 列）'],['葉文雄',72,'北區大同里','王怡君','同里已有 4 位個案，可順路訪視'],['何春桃',88,'北區光明里','周社工','去年由周社工服務'],['曾阿土',81,'北區永樂里','黃社工','案量最低（35）'],['羅玉蘭',76,'北區大同里','王怡君','同里順路；與王怡君既有個案為鄰居'],['潘清水',84,'北區長安里','黃社工','案量最低（35）']];
+state.asg={}; state.asgDone=false;
+function vSAssign(){
+  const staff=['王怡君','張社工','黃社工','周社工'];
+  return `<div class="head"><div><h1>派案：社會局名冊新增 6 位，系統先給建議</h1><p>系統比對歷年名冊，優先派回原主責；再看各社工案量與居住區域。建議只是參考，由督導決定。</p></div>
+   ${state.asgDone?'<span class="tag t-hi">✓ 已派案，社工會在「我的今天」看到</span>':'<button class="btn pri" id="asgGo">確認派案（6 位）</button>'}</div>
+  <div class="grid" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)">
+   <div class="card"><h2>待派案 <small>獨居老人關懷・社會局名冊 115Q4 新增</small></h2><div class="bd scroll-x"><table class="t"><tr><th>個案</th><th>里別</th><th>建議主責</th><th>理由</th></tr>
+    ${ASG.map((a,i)=>`<tr><td style="white-space:nowrap"><b style="font-weight:500">${a[0]}</b> <span class="muted">${a[1]}</span></td><td style="font-size:13px">${a[2]}</td><td><select data-asg="${i}" style="border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--panel)" ${state.asgDone?'disabled':''}>${staff.map(s=>`<option ${(state.asg[i]||a[3])===s?'selected':''}>${s}</option>`).join('')}</select></td><td style="font-size:13px">${(state.asg[i]&&state.asg[i]!==a[3])?'<span style="color:var(--human)">督導調整</span>':a[4]}</td></tr>`).join('')}</table>
+    <div class="muted" style="font-size:12.5px;margin-top:8px">比對 113–114 年名冊共 1,046 列，花不到 1 分鐘；原本人工核對約 4–6 小時。</div></div></div>
+   <div class="card"><h2>派案後案量</h2><div class="bd" style="display:flex;flex-direction:column;gap:10px;font-size:14px">
+    ${staff.map(s=>{const base={'王怡君':38,'張社工':41,'黃社工':35,'周社工':44}[s]; const add=ASG.filter((a,i)=>(state.asg[i]||a[3])===s).length; return `<div><div class="row" style="justify-content:space-between"><span>${s}</span><span class="mono">${base} ＋ ${add} ＝ ${base+add}</span></div><div class="meter" style="margin-top:4px;height:6px"><i style="width:${(base)/50*100}%;background:var(--ai)"></i><i style="width:${add/50*100}%;background:var(--human)"></i></div></div>`}).join('')}
+    <div class="muted" style="font-size:12.5px">金色為本次新派。</div></div></div>
+  </div>`;
+}
+function bindSAssign(){
+  document.querySelectorAll('[data-asg]').forEach(s=>s.onchange=()=>{state.asg[s.dataset.asg]=s.value;render()});
+  const g=$('#asgGo'); if(g) g.onclick=()=>{state.asgDone=true;render()};
+}
+
+function vSkip(t){
+  const c=CASES[state.caseId], tn=TABS.find(x=>x[0]===t)[1], alt=Object.keys(CASEVIEW).find(k=>k!==state.caseId&&CASEVIEW[k][t]);
+  if(!U().cases.includes(alt)) return `<div class="head"><div><h1>${tn}：${c.short}</h1><p>這個步驟在 demo 裡以其他社工的個案示範；請改用督導或王怡君帳號查看。正式系統裡每位個案都有完整的步驟。</p></div></div>`;
+  return `<div class="head"><div><h1>${tn}：${c.short}</h1><p>這個步驟在 demo 裡以「${CASES[alt].short}」示範，畫面與操作相同；正式系統裡每位個案都有完整的步驟。</p></div></div>
+  <div class="card"><div class="bd row"><a class="btn pri" href="#${alt}:${t}" style="text-decoration:none">看 ${CASES[alt].short} 的${tn} →</a><a class="btn" href="#${state.caseId}:history" style="text-decoration:none">看 ${c.short} 的服務歷程</a></div></div>`;
+}
+
+/* ---------- 個案清單 ---------- */
+function vCases(){
+  const rows=[
+   ['lin','林阿桃（82）','F115-0102','獨老關懷','王怡君','開案訪視完成・狀況說明審閱中','轉介送餐待對方回覆',''],
+   ['chen','陳家（母＋2 名子女）','F115-0231','家庭支持＋兒少據點','李社工','初訪完成・轉介準備中','外婆跌倒，這兩週接送可能中斷','⟷ 林秀英（母女）'],
+   ['xiu','林秀英（69）','F115-0418','獨老關懷＋實物給付','張社工','服務中・休養追蹤','下週與李社工聯合訪視','⟷ 陳家（母女）']];
+  return `<div class="head"><div><h1>個案清單：不同方案的個案，在同一個系統</h1><p>獨老、家庭支持、兒少據點的個案都在這裡。每位個案用同一套個人編號與家戶編號；有親屬關係的家戶會標出來，點進去就是同一套工作區。</p></div>
+   <div class="row"><a class="btn" href="#k-index" style="text-decoration:none">跨方案查詢</a><a class="btn pri" href="#lin:intake" style="text-decoration:none">＋ 收新案</a></div></div>
+  <div class="card"><div class="bd scroll-x"><table class="t"><tr><th>個案</th><th>家戶</th><th>方案</th><th>主責</th><th>進度</th><th>提醒</th><th>家戶關聯</th><th></th></tr>
+   ${rows.map(r=>`<tr><td><b style="font-weight:500">${r[1]}</b></td><td class="mono" style="font-size:13px">${r[2]}</td><td>${r[3]}</td><td style="white-space:nowrap">${r[4]}</td><td style="font-size:13.5px">${r[5]}</td><td style="font-size:13.5px">${r[6]}</td><td style="font-size:13.5px;color:var(--human)">${r[7]}</td><td><a class="btn sm" href="#${r[0]}:${r[0]==='xiu'?'history':'geno'}" style="text-decoration:none">開啟</a></td></tr>`).join('')}
+  </table></div></div>
+  <div class="grid g2" style="margin-top:16px">
+   <div class="card"><h2>本會方案</h2><div class="bd" style="font-size:14px;display:flex;flex-direction:column;gap:6px">
+    <div class="row" style="justify-content:space-between"><span>獨居老人關懷</span><span class="muted">2 位個案</span></div>
+    <div class="row" style="justify-content:space-between"><span>家庭支持服務</span><span class="muted">1 戶</span></div>
+    <div class="row" style="justify-content:space-between"><span>兒少據點課後陪伴</span><span class="muted">1 位兒少</span></div>
+    <div class="row" style="justify-content:space-between"><span>實物給付</span><span class="muted">1 位</span></div></div></div>
+   <div class="card"><h2>示範說明</h2><div class="bd" style="font-size:14px;line-height:1.7">林阿桃示範「前單位三年紀錄匯入、訪視錄音、轉介表單」；陳家示範「脆家派案、家庭編號、早療與學校轉介」；林秀英示範「同一家人跨兒少與獨老方案」。三位都是合成資料。</div></div>
+  </div>`;
+}
+
+
+
+/* ---------- 訪視表單匯入（Google 表單回應／紙本拍照） ---------- */
+state.fi={src:'gform',fix:{},done:false};
+const FI_MAP=[['時間戳記','訪視日期','au'],['個案姓名＋電話末 3 碼','個案（個人編號比對）','au'],['訪視方式（家訪／電訪）','服務類型・服務次數','au'],['生活自理（勾選）','健康與行動','au'],['用餐狀況（勾選）','居住與生活','au'],['情緒狀況（穩定／低落／需關注）','情緒與心理；「需關注」列入提醒','au'],['是否需要轉介（勾選）','轉介待辦','au'],['備註（文字）','訪視摘要（AI 整理成紀錄語句，附原文）','ai']];
+const FI_Q=[{id:1,raw:'陳秀英・電話末 3 碼 512',why:'本會有 2 位「陳秀英」',opts:['陳秀英 78（F115-2231，王怡君）','陳秀英 84（F115-5170，周社工）'],pick:0},{id:2,raw:'林阿逃・電話末 3 碼 088',why:'名字疑似打錯字',opts:['林阿桃 82（F115-0102，王怡君）','新增為新個案'],pick:0}];
+function vFormImp(){
+  const left=FI_Q.filter(q=>!state.fi.fix[q.id]).length, f=state.fi;
+  return `<div class="head"><div><h1>訪視表單匯入：現場勾選，回來不用再登打</h1><p>獨老訪視表已轉成 Google 表單，社工在現場用手機勾選。回辦公室把回應試算表（Excel）匯入，系統依姓名加電話對應到個案，寫入訪視紀錄、累計服務次數。還沒轉成 Google 表單的單位，紙本表單拍照也能辨識勾選。</p></div>
+   <div class="seg"><button class="${f.src==='gform'?'on':''}" data-fs="gform">Google 表單回應（Excel）</button><button class="${f.src==='photo'?'on':''}" data-fs="photo">紙本表單拍照</button></div></div>
+  <div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1.15fr)">
+   <div class="stack">
+    <div class="card"><h2>${f.src==='gform'?'收到的檔案':'收到的照片'}</h2><div class="bd">${f.src==='gform'?
+      `<div class="file"><div class="ic" style="background:#2D7A4E">XLS</div><div style="flex:1">獨老訪視表（回應）_10 月第 4 週.xlsx<div class="muted" style="font-size:12.5px">Google 表單匯出・18 列・王怡君、周社工</div></div><span class="st ok">✓</span></div>`:
+      `<div class="file"><div class="ic" style="background:#B5481F">IMG</div><div style="flex:1">紙本訪視表_林阿桃_1021.jpg<div class="muted" style="font-size:12.5px">辨識到 14 個勾選框，1 個勾得不清楚</div></div><span class="st" style="color:var(--mid)">1 處待確認</span></div>
+       <div class="alert" style="margin-top:10px"><span>?</span><div><b>「用餐狀況」勾選不清楚</b>可能是「自行備餐」或「需協助」，請對照照片確認。<div class="row" style="margin-top:6px"><button class="btn sm">自行備餐</button><button class="btn sm pri">需協助</button></div></div></div>`}
+    </div></div>
+    <div class="card"><h2>欄位對應 <small>第一次設定後存成範本</small></h2><div class="bd scroll-x"><table class="t"><tr><th>表單欄位</th><th>寫入系統</th><th></th></tr>
+     ${FI_MAP.map(m=>`<tr><td>${m[0]}</td><td style="font-size:13.5px">${m[1]}</td><td><span class="tag ${m[2]==='au'?'t-au':'t-ai'}">${m[2]==='au'?'直接帶入':'AI 整理'}</span></td></tr>`).join('')}</table>
+     <div class="muted" style="font-size:12.5px;margin-top:8px">勾選題直接帶入，不經 AI；只有「備註」文字交給地端模型整理成紀錄語句。情緒勾「需關注」只會產生提醒，風險判定仍由社工做。</div></div></div>
+   </div>
+   <div class="stack">
+    <div class="card"><h2>對應到個案 <span class="tag ${left?'t-mid':'t-hi'}">${left?`${left} 筆待確認`:'18 筆全部對應'}</span><small>16 筆自動對應</small></h2><div class="bd" style="display:flex;flex-direction:column;gap:10px">
+     ${FI_Q.map(q=>`<div style="border:1px solid var(--line-2);border-radius:10px;padding:10px 12px"><div class="row" style="justify-content:space-between"><b style="font-weight:500">表單填寫：${q.raw}</b><span class="muted" style="font-size:12.5px">${q.why}</span></div>
+       <div class="row" style="margin-top:8px">${state.fi.fix[q.id]?`<span class="ok" style="font-size:14px">✓ ${state.fi.fix[q.id]}</span>`:q.opts.map((o,i)=>`<button class="btn sm ${i===q.pick?'pri':''}" data-fq="${q.id}" data-fo="${esc(o)}">${o}</button>`).join('')}</div></div>`).join('')}
+    </div></div>
+    <div class="card"><h2>產生的訪視紀錄 <small>林阿桃・10/21 家訪</small></h2><div class="bd" style="font-size:14px;display:flex;flex-direction:column;gap:8px">
+     <div style="background:var(--panel-2);border-radius:8px;padding:10px 12px;line-height:1.75">10/21 家訪。生活自理：可自理，上下樓需扶牆。用餐：需協助，送餐服務尚未開始，近期多以泡麵果腹。情緒：<b>需關注</b>（社工勾選）。<span style="background:var(--ai-bg);border-radius:4px;padding:0 3px">膝痛持續，提到女兒上週有打電話來。</span></div>
+     <div class="muted" style="font-size:12.5px">藍底為 AI 由備註整理，原文：「膝蓋還是痛 女兒上禮拜有打來」</div>
+     <div class="row" style="justify-content:space-between;margin-top:4px"><span style="font-size:13px">寫入後：訪視紀錄 18 筆・服務次數 +18（月報自動更新）・提醒 2 筆・轉介待辦 1 筆</span>
+      ${f.done?'<span class="ok">✓ 已寫入 18 筆</span>':`<button class="btn pri" id="fiGo" ${left?'disabled':''}>寫入 18 筆</button>`}</div></div></div>
+   </div>
+  </div>`;
+}
+function bindFormImp(){
+  document.querySelectorAll('[data-fs]').forEach(b=>b.onclick=()=>{state.fi.src=b.dataset.fs;render()});
+  document.querySelectorAll('[data-fq]').forEach(b=>b.onclick=()=>{state.fi.fix[b.dataset.fq]=b.dataset.fo;render()});
+  const g=$('#fiGo'); if(g) g.onclick=()=>{state.fi.done=true;render()};
+}
+
+/* ---------- 方案總覽與方案個案清單（單位視角，個案量大） ---------- */
+const PROGS={
+ elder:{name:'獨居老人關懷',unit:'人',n:312,newM:9,rev:14,late:6,cross:41,due:'11/05 縣市月報',me:'王怡君',staff:['王怡君','張社工','黃社工','周社工'],st:['待開案','服務中','服務中','服務中','服務中','服務中','結案追蹤'],rem:['問安連續 3 次未接','訪視逾期 5 天','名冊資料異動','轉介待回覆','','','',''],other:['＋實物給付','＋家支（家人）','','','','','','']},
+ fam:{name:'家庭支持服務',unit:'戶',n:48,newM:4,rev:6,late:2,cross:19,due:'11/10 脆家系統建檔',me:'李社工',staff:['李社工','蔡社工','許社工'],st:['待開案','服務中','服務中','服務中','結案追蹤'],rem:['訪視逾期 3 天','共訪待安排','社福中心待回覆','','',''],other:['＋兒少據點','＋關懷訪視','＋獨老（家人）','','','']},
+ kid:{name:'兒少據點課後陪伴',unit:'人',n:36,newM:2,rev:3,late:0,cross:15,due:'12/31 半年成果',me:'吳老師',staff:['吳老師','鄭老師'],st:['服務中','服務中','服務中','服務中','暫停'],rem:['連續 2 週未出席','接送人異動','','',''],other:['＋家支','＋家支','','','']},
+ care:{name:'6 歲以下關懷訪視',unit:'人',n:50,newM:0,rev:8,late:5,cross:12,due:'116/03 期末清冊',me:'李社工',staff:['李社工','蔡社工'],st:['待訪視','待訪視','已訪視','已訪視','已結案'],rem:['6 個月期限剩 30 天','核章待上傳','',''],other:['＋家支','','','']},
+ goods:{name:'實物給付',unit:'人',n:120,newM:11,rev:2,late:1,cross:58,due:'11/15 核銷',me:'張社工',staff:['張社工','黃社工'],st:['服務中','服務中','服務中','已結束'],rem:['本月未領取','資格效期將到','',''],other:['＋獨老','＋獨老','＋家支','']}
+};
+const PG_REAL={
+ elder:[['林阿桃',82,'F115-0102','王怡君','服務中','10/28','轉介送餐待回覆','','lin:geno'],['林秀英',69,'F115-0418','張社工','服務中','10/30','跌倒休養中','＋實物給付・家人在家支','xiu:history']],
+ fam:[['陳家（母＋2 名子女）','','F115-0231','李社工','服務中','10/27','外婆跌倒，接送可能中斷','＋兒少據點・＋關懷訪視（結案）','chen:geno']],
+ kid:[['小宇',9,'F115-0231','吳老師','服務中','每週一三五','','＋家支','chen:geno']],
+ care:[['小晴',5,'F115-0231','李社工','已結案','—','','＋家支','chen:geno']],
+ goods:[['林秀英',69,'F115-0418','張社工','服務中','11/03','','＋獨老','xiu:history']]
+};
+const PG_CACHE={};
+function pgRows(k){
+  if(PG_CACHE[k]) return PG_CACHE[k];
+  const P=PROGS[k]; let seed=k.length*9973+P.n; const rnd=()=>{seed=(seed*16807)%2147483647;return (seed-1)/2147483646};
+  const pick=a=>a[Math.floor(rnd()*a.length)];
+  const SN=['陳','林','黃','張','李','王','吳','劉','蔡','楊','許','鄭','謝','郭','洪','曾','邱','廖','賴','周'];
+  const GE=['秀英','美玉','金枝','麗華','春嬌','玉蘭','月娥','阿滿','清水','金龍','文雄','國華','明德','阿土','進財','寶珠','素珍','碧霞','錦雲','福來'];
+  const GK=['小安','小傑','小涵','小恩','小軒','小妤','小翔','小琪','小睿','小芸','小哲','小媛'];
+  const rows=PG_REAL[k].map(r=>({real:true,name:r[0],age:r[1],hh:r[2],owner:r[3],st:r[4],next:r[5],rem:r[6],other:r[7],link:r[8]}));
+  for(let i=rows.length;i<P.n;i++){
+    const s=pick(SN), fam=k==='fam';
+    const name=fam?`${s}家（${pick(['母＋1','母＋2','父＋1','祖孫 2 人','雙親＋3'])}）`:s+pick(k==='kid'||k==='care'?GK:GE);
+    const age=fam?'':k==='kid'?6+Math.floor(rnd()*7):k==='care'?1+Math.floor(rnd()*5):65+Math.floor(rnd()*25);
+    const d=23+Math.floor(rnd()*28), next=d<=31?`10/${d}`:`11/${String(d-31).padStart(2,'0')}`;
+    rows.push({name,age,hh:`F115-${String(1000+Math.floor(rnd()*8999))}`,owner:pick(P.staff),st:pick(P.st),next:k==='kid'?pick(['每週一三五','每週二四','每週一至五']):next,rem:pick(P.rem),other:pick(P.other)});
+  }
+  const key=r=>{const m=/^(\d+)\/(\d+)$/.exec(r.next);return m?(+m[1])*100+(+m[2]):9999};
+  const real=rows.filter(r=>r.real), rest=rows.filter(r=>!r.real).sort((a,b)=>key(a)-key(b));
+  return PG_CACHE[k]=[...real,...rest];
+}
+state.pg='elder'; state.pf={mine:false,st:'all',rem:false,cross:false,q:''}; state.page=0; state.sel={};
+function vProgs(){
+  const ks=Object.keys(PROGS), tot=ks.reduce((a,k)=>a+PROGS[k].n,0);
+  return `<div class="head"><div><h1>方案總覽：本會各方案的個案與待辦</h1><p>工作依方案分派、報表依方案交，所以入口是方案。底層每個人只有一個個人編號，所以同一人跨方案時會被標出來，全單位人數也能去重。</p></div>
+   <div class="row"><a class="btn" href="#k-index" style="text-decoration:none">跨方案查詢</a></div></div>
+  <div class="kpis" style="margin-bottom:16px">
+   <div class="card kpi"><small>在案（各方案合計）</small><div class="big">${tot}</div><div class="d">全單位去重後 498 人・372 戶</div></div>
+   <div class="card kpi"><small>本月新收</small><div class="big">${ks.reduce((a,k)=>a+PROGS[k].newM,0)}</div><div class="d">5 個方案</div></div>
+   <div class="card kpi"><small>AI 草稿待審閱</small><div class="big">${ks.reduce((a,k)=>a+PROGS[k].rev,0)}</div><div class="d">社工確認後才入紀錄</div></div>
+   <div class="card kpi"><small>逾期提醒</small><div class="big" style="color:var(--low)">${ks.reduce((a,k)=>a+PROGS[k].late,0)}</div><div class="d">訪視、核章、回覆</div></div>
+   <div class="card kpi"><small>跨方案個案</small><div class="big">68</div><div class="d">人（去重）同時在 2 個以上方案</div></div>
+  </div>
+  <div class="card"><div class="bd scroll-x"><table class="t"><tr><th>方案</th><th style="text-align:right">在案</th><th style="text-align:right">本月新收</th><th style="text-align:right">待審閱</th><th style="text-align:right">逾期</th><th style="text-align:right">跨方案</th><th>下一個報表</th><th>主責人員</th><th></th></tr>
+   ${ks.map(k=>{const P=PROGS[k];return `<tr><td><b style="font-weight:500">${P.name}</b></td><td class="mono" style="text-align:right">${P.n} ${P.unit}</td><td class="mono" style="text-align:right">${P.newM}</td><td class="mono" style="text-align:right">${P.rev}</td><td class="mono" style="text-align:right;${P.late?'color:var(--low)':''}">${P.late}</td><td class="mono" style="text-align:right">${P.cross}</td><td style="font-size:13.5px">${P.due}</td><td style="font-size:13px" class="muted">${P.staff.join('、')}</td><td><a class="btn sm" href="#plist" data-pg="${k}" style="text-decoration:none">看個案</a></td></tr>`}).join('')}
+  </table></div></div>`;
+}
+function bindProgs(){ document.querySelectorAll('[data-pg]').forEach(a=>a.onclick=()=>{state.pg=a.dataset.pg;state.page=0;state.sel={};state.pf={mine:false,st:'all',rem:false,cross:false,q:''}}); }
+function vPlist(){
+  const P=PROGS[state.pg], f=state.pf; let rows=pgRows(state.pg);
+  if(f.mine) rows=rows.filter(r=>r.owner===P.me);
+  if(f.st!=='all') rows=rows.filter(r=>r.st===f.st);
+  if(f.rem) rows=rows.filter(r=>r.rem);
+  if(f.cross) rows=rows.filter(r=>r.other);
+  if(f.q) rows=rows.filter(r=>r.name.includes(f.q)||r.hh.includes(f.q));
+  const per=12, pages=Math.max(1,Math.ceil(rows.length/per)), pg=Math.min(state.page,pages-1), view=rows.slice(pg*per,pg*per+per);
+  const nsel=Object.keys(state.sel).length, sts=[...new Set(P.st)];
+  return `<div class="head"><div><h1>${P.name}：${P.n} ${P.unit === '戶'?'戶':'位'}個案</h1><p>預設依下次訪視日排序。可篩選主責、狀態、有提醒、跨方案；勾選後可批次產出月報或指派。點個案進入個案工作區。</p></div>
+   <div class="row"><select id="pgSel" aria-label="切換方案" ${U().role==='sw'?'disabled':''} style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--panel)">${Object.entries(PROGS).map(([k,v])=>`<option value="${k}" ${k===state.pg?'selected':''}>${v.name}</option>`).join('')}</select><button class="btn">匯入名冊（Excel）</button><a class="btn pri" href="#export" style="text-decoration:none">產出本月月報</a></div></div>
+  <div class="card" style="margin-bottom:12px"><div class="bd row" style="gap:8px">
+   <input id="pfQ" value="${esc(f.q)}" placeholder="搜尋姓名或家戶編號" style="border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--panel);min-width:200px">
+   ${U().role==='sw'?`<button class="chip ${f.mine?'on':''}" data-pf="mine">只看我的（${P.me}）</button>`:''}
+   <button class="chip ${f.st==='all'?'on':''}" data-pst="all">全部狀態</button>${sts.map(s=>`<button class="chip ${f.st===s?'on':''}" data-pst="${s}">${s}</button>`).join('')}
+   <button class="chip ${f.rem?'on':''}" data-pf="rem">有提醒</button>
+   <button class="chip ${f.cross?'on':''}" data-pf="cross">跨方案</button>
+   <span class="muted" style="margin-left:auto;font-size:13px">符合 ${rows.length} 筆</span></div></div>
+  ${nsel?`<div class="alert" style="margin-bottom:12px;background:var(--ai-bg);border-color:var(--ai)"><span>☑</span><div style="flex:1"><b>已選 ${nsel} 位</b><div class="row" style="margin-top:6px"><button class="btn sm pri">批次產出月報</button><button class="btn sm">批次指派主責</button><button class="btn sm">匯出名冊</button><button class="btn sm" id="selClr">取消選取</button></div></div></div>`:''}
+  <div class="card"><div class="bd scroll-x"><table class="t"><tr><th><input type="checkbox" id="selAll" aria-label="全選本頁" ${view.length&&view.every(r=>state.sel[r.hh+r.name])?'checked':''}></th><th>個案</th><th>家戶</th><th>主責</th><th>狀態</th><th>下次訪視</th><th>提醒</th><th>其他方案</th><th></th></tr>
+   ${view.map(r=>{const id=r.hh+r.name;return `<tr${r.real?' style="background:var(--ai-bg)"':''}><td><input type="checkbox" data-sel="${esc(id)}" ${state.sel[id]?'checked':''} aria-label="選取 ${esc(r.name)}"></td><td><b style="font-weight:500">${esc(r.name)}</b>${r.age!==''?` <span class="muted">${r.age}</span>`:''}</td><td class="mono" style="font-size:13px">${r.hh}</td><td style="white-space:nowrap">${r.owner}${r.owner===U().name?' <span class="muted" style="font-size:12px">（你）</span>':''}</td><td style="white-space:nowrap">${r.st}</td><td class="mono" style="font-size:13px;white-space:nowrap">${r.next}</td><td style="font-size:13px">${r.rem?`<span style="color:var(--low)">● </span>${r.rem}`:''}</td><td style="font-size:13px;color:var(--human)">${r.other}</td><td>${r.real&&U().cases.includes(r.link.split(':')[0])?`<a class="btn sm pri" href="#${r.link}" style="text-decoration:none">開啟</a>`:`<span class="muted" style="font-size:12px" title="合成清單，僅標藍的個案有完整示範">開啟</span>`}</td></tr>`}).join('')}
+  </table>
+  <div class="row" style="margin-top:12px;justify-content:space-between"><span class="muted" style="font-size:13px">第 ${pg+1} / ${pages} 頁・藍底為有完整示範的個案，其餘為合成清單</span><div class="row"><button class="btn sm" id="pgPrev" ${pg?'':'disabled'}>上一頁</button><button class="btn sm" id="pgNext" ${pg<pages-1?'':'disabled'}>下一頁</button></div></div>
+  </div></div>`;
+}
+function bindPlist(){
+  const re=()=>{state.page=0;render()};
+  $('#pgSel').onchange=e=>{state.pg=e.target.value;state.sel={};state.pf={mine:false,st:'all',rem:false,cross:false,q:''};re()};
+  document.querySelectorAll('[data-pf]').forEach(b=>b.onclick=()=>{state.pf[b.dataset.pf]=!state.pf[b.dataset.pf];re()});
+  document.querySelectorAll('[data-pst]').forEach(b=>b.onclick=()=>{state.pf.st=b.dataset.pst;re()});
+  const q=$('#pfQ'); q.onchange=()=>{state.pf.q=q.value.trim();re()};
+  document.querySelectorAll('[data-sel]').forEach(c=>c.onchange=()=>{if(c.checked)state.sel[c.dataset.sel]=1;else delete state.sel[c.dataset.sel];render()});
+  const all=$('#selAll'); if(all) all.onchange=()=>{document.querySelectorAll('[data-sel]').forEach(c=>{if(all.checked)state.sel[c.dataset.sel]=1;else delete state.sel[c.dataset.sel]});render()};
+  const clr=$('#selClr'); if(clr) clr.onclick=()=>{state.sel={};render()};
+  const pv=$('#pgPrev'), nx=$('#pgNext'); if(pv) pv.onclick=()=>{state.page--;render()}; if(nx) nx.onclick=()=>{state.page++;render()};
+}
+
+/* ---------- 家系圖點人看服務紀錄 ---------- */
+const youFix=t=>String(t).includes('（你）')&&!String(t).startsWith(U().name)?String(t).replace('（你）',''):t;
+function personCard(p){
+  return `<div class="card"><h2>${p.name} 在本會的服務 <small class="mono">${p.id||'未建個人編號'}${p.hh?'・'+p.hh:''}</small></h2><div class="bd" style="font-size:14px;display:flex;flex-direction:column;gap:10px">
+   ${p.progs.length?`<table class="t"><tr><th>方案</th><th>期間</th><th>主責</th><th style="text-align:right">次數</th><th></th></tr>${p.progs.map(r=>`<tr><td>${r[0]}</td><td style="font-size:13px;white-space:nowrap">${r[1]}</td><td style="font-size:13px;white-space:nowrap">${youFix(r[2])}</td><td class="mono" style="text-align:right">${r[3]}</td><td>${r[4]?'<span class="tag t-au">可看</span>':'<span class="tag t-off" style="text-decoration:none">🔒 需同意</span>'}</td></tr>`).join('')}</table>`:`<div><span class="tag t-off" style="text-decoration:none">未在本會服務</span></div>`}
+   ${p.recs&&p.recs.length?`<div class="tl">${p.recs.map(r=>`<div><i></i><span><b class="mono" style="font-weight:500">${r[0]}</b>　${esc(r[1])}<br><span class="muted" style="font-size:12.5px">${r[2]}</span></span><span></span></div>`).join('')}</div>`:''}
+   ${p.note?`<div class="muted" style="font-size:12.5px">${p.note}</div>`:''}
+   ${p.progs.some(r=>!r[4])?`<div class="row"><button class="btn sm">💬 留言給${p.progs.find(r=>!r[4])[2]}（對方主責）</button><span class="muted" style="font-size:12.5px">要看內容，請對方取得同意或直接說明</span></div>`:''}
+   ${p.progs.length?`<div class="row"><a class="btn sm" href="#k-index" style="text-decoration:none">產出服務摘要</a><button class="btn sm">轉介這個人</button><button class="btn sm">記一筆重要事件</button></div>`:''}
+  </div></div>`;
+}
+const L_PS={
+ self:{name:'林阿桃',id:'P0102-01',hh:'F115-0102',progs:[['獨老關懷','115/08–','王怡君（你）',3,1]],recs:[['08/28','收案電訪：確認同意與訪視時間','獨老關懷・王怡君'],['10/14','開案訪視（錄音 12 分）','獨老關懷・王怡君'],['10/20','轉介送餐服務（外部單位）','獨老關懷・王怡君']]},
+ hus:{name:'配偶',progs:[],note:'已歿。資訊來自訪談 00:01:46。'},
+ son:{name:'兒子',progs:[],note:'家系圖資訊來自訪談；未在本會服務。'},
+ dau:{name:'女兒',progs:[],note:'住台中；未在本會服務。可作為緊急聯絡人。'},
+ sil:{name:'女婿',progs:[],note:'由社工依前單位紀錄補上。'},
+ gd:{name:'孫女',progs:[],note:'歸屬待確認。'}
+};
+const K_PS={
+ mo:{name:'陳淑芬',id:'P0231-01',hh:'F115-0231',progs:[['家庭支持服務','115/10–','李社工（你）',3,1],['親職團體','115/08','團體帶領人',2,0]],recs:[['10/16','電訪：約定初訪時間','家庭支持・李社工'],['10/22','家訪（初訪）：家庭現況與需求','家庭支持・李社工'],['10/27','家訪：討論早療與學校轉介','家庭支持・李社工']],note:'親職團體只看得到出席次數，內容需本人同意。'},
+ son:{name:'小宇',id:'P0231-02',hh:'F115-0231',progs:[['兒少據點課後陪伴','115/03–','吳老師',46,1]],recs:[['04/02','接送人簽名：外婆','據點出席紀錄'],['05/20','老師觀察：上課坐不住、作業常未完成','據點觀察紀錄'],['10/21','出席課後陪伴','據點出席紀錄']],note:'母親 10/22 同意家支社工查閱據點紀錄，所以可看。'},
+ dau:{name:'小晴',id:'P0231-03',hh:'F115-0231',progs:[['6 歲以下關懷訪視','113/09–114/03（結案）','李社工（你）',4,1]],recs:[['113/09','家訪：發展檢核正常','關懷訪視・李社工'],['114/03','結案訪視','關懷訪視・李社工']]},
+ fa:{name:'父',id:'P0231-04',progs:[],note:'分居；未在本會服務。家系圖資訊來自派案單 p.1。'},
+ gm:{name:'林秀英（外婆）',id:'P0418-01',hh:'F115-0418（另一家戶）',progs:[['獨老關懷','114/06–','張社工',44,0],['實物給付','115/02–','張社工',5,0]],recs:[['10/25','重大事件提醒：浴室跌倒，需休養兩週','獨老方案・本人同意分享此類']],note:'與陳淑芬為母女（10/23 確認連結）。紀錄內容需本人同意。'},
+ gf:{name:'外公',progs:[],note:'已歿。資訊來自脆家系統匯出 112/06。'}
+};
+state.kSel='mo';
+
+/* ---------- 服務歷程（跨方案） ---------- */
+const HIST={
+ lin:[['林阿桃','P0102-01','F115-0102','獨老關懷','115/08–','王怡君（你）',3,'10/20 轉介送餐',true]],
+ chen:IX_ROWS,
+ xiu:IX_ROWS.map(r=>[...r.slice(0,5),r[2]==='F115-0418'?r[5]+'（你）':r[5],r[6],r[7],r[2]==='F115-0418']).sort((x,y)=>(y[2]==='F115-0418')-(x[2]==='F115-0418'))
+};
+function vHist(){
+  const c=CASES[state.caseId], rows=HIST[state.caseId], hhs=[...new Set(rows.map(r=>r[2]))];
+  return `<div class="head"><div><h1>服務歷程（跨方案）：${c.short}與家人在本會的服務</h1><p>同一個人在不同方案的服務排在一起；有親屬連結的家戶一併列出。自己主責的方案看得到內容，其他方案只看得到有沒有服務、主責與次數。</p></div>
+   <div class="row"><a class="btn pri" href="#k-index" style="text-decoration:none">產出摘要報告</a></div></div>
+  <div class="card"><h2>${hhs.length} 個家戶・${new Set(rows.map(r=>r[1])).size} 人・${rows.length} 個方案 <small>服務次數：115/01–115/10</small></h2><div class="bd scroll-x">
+   <table class="t"><tr><th>成員</th><th>家戶</th><th>方案</th><th>期間</th><th>主責</th><th style="text-align:right">次數</th><th>最近一次</th><th>內容</th></tr>
+   ${rows.map(r=>`<tr><td style="white-space:nowrap">${r[0]}<br><span class="mono muted" style="font-size:12px">${r[1]}</span></td><td class="mono" style="font-size:13px">${r[2]}</td><td>${r[3]}</td><td style="font-size:13px">${r[4]}</td><td style="font-size:13.5px;white-space:nowrap">${youFix(r[5])}</td><td class="mono" style="text-align:right">${r[6]}</td><td style="font-size:13px;white-space:nowrap">${r[7]}</td><td>${r[8]?'<span class="tag t-au">可看</span>':'<span class="tag t-off" style="text-decoration:none">🔒 需同意</span>'}</td></tr>`).join('')}</table>
+   ${state.caseId==='lin'?'<div class="muted" style="font-size:13px;margin-top:8px">家系圖上的家人都沒有在本會接受服務。</div>':''}</div></div>`;
+}
+function bindHist(){}
+
+const CASEVIEW={
+ lin:{intake:[vIntake,bindIntake],visit:[vVisit,bindVisit],status:[vStatus,bindStatus],geno:[vGeno,bindGeno],referral:[vReferral,bindReferral],history:[vHist,bindHist]},
+ chen:{intake:[vKIntake,bindKIntake],geno:[vKStory,bindKStory],referral:[vKRef,bindKRef],history:[vHist,bindHist]},
+ xiu:{history:[vHist,bindHist]}
+};
+const ORGVIEW={fieldmap:[vFieldMap,bindFieldMap],'s-home':[vSHome,()=>{}],'s-review':[vSReview,bindSReview],'s-assign':[vSAssign,bindSAssign],today:[vToday,bindToday],formimp:[vFormImp,bindFormImp],progs:[vProgs,bindProgs],plist:[vPlist,bindPlist],'k-index':[vKIndex,bindKIndex],'k-link':[vKLink,bindKLink],'k-stats':[vKStats,bindKStats],export:[vExport,bindExport],dash:[vDash,bindDash],rules:[vRules,bindRules],audit:[vAudit,bindAudit],measure:[vMeasure,bindMeasure]};
+let lastRoute=null;
+function render(){
+  const r=route(), app=document.querySelector('.app'), v=$('#view');
+  if(r.type==='login'){app.classList.add('nologin'); v.innerHTML=vLogin(); bindLogin(); return;}
+  app.classList.remove('nologin');
+  if(r.type==='case') state.caseId=r.c;
+  const key=r.type==='case'?r.c+':'+r.t:r.id;
+  const keep=key===lastRoute?v.scrollTop:0;
+  nav(r); crumb(r); tally();
+  const fn=r.type==='case'?(CASEVIEW[r.c][r.t]||[()=>vSkip(r.t),()=>{}]):ORGVIEW[r.id];
+  v.innerHTML=fn[0](); fn[1]();
+  v.scrollTop=keep; lastRoute=key;
+}
+window.addEventListener('hashchange',render);
+render();
+</script>
+
+</body>
+</html>
